@@ -1,6 +1,6 @@
 import type { TenantRole } from '@/types/tenant';
 
-type Permission =
+export type Permission =
   | 'stock:read'
   | 'stock:write'
   | 'stock:delete'
@@ -8,54 +8,101 @@ type Permission =
   | 'finance:read'
   | 'finance:write'
   | 'finance:approve'
+  | 'finance:disburse'
+  | 'finance:apply'
   | 'finance:cross_tenant_read'
   | 'procurement:read'
   | 'procurement:write'
   | 'audit:read'
   | 'audit:investigate'
-  | 'members:manage';
+  | 'members:manage'
+  | 'members:invite'
+  | 'members:approve'
+  | 'tenant:manage';
+
+const ALL_PERMISSIONS: Permission[] = [
+  'stock:read',
+  'stock:write',
+  'stock:delete',
+  'scan:execute',
+  'finance:read',
+  'finance:write',
+  'finance:approve',
+  'finance:disburse',
+  'finance:apply',
+  'finance:cross_tenant_read',
+  'procurement:read',
+  'procurement:write',
+  'audit:read',
+  'audit:investigate',
+  'members:manage',
+  'members:invite',
+  'members:approve',
+  'tenant:manage',
+];
 
 export const ROLE_PERMISSIONS: Record<TenantRole, Permission[]> = {
-  admin: [
+  // Pimpinan — akses penuh
+  ketua: ALL_PERMISSIONS,
+  wakil_ketua: ALL_PERMISSIONS,
+
+  // Keuangan — approve pinjaman (langkah internal)
+  bendahara: [
+    'finance:read',
+    'finance:write',
+    'finance:approve',
+    'finance:cross_tenant_read',
+    'procurement:read',
+    'audit:read',
+  ],
+
+  // Operasional & administrasi anggota
+  operator: [
     'stock:read',
     'stock:write',
     'stock:delete',
     'scan:execute',
-    'finance:read',
-    'finance:write',
-    'finance:approve',
-    'finance:cross_tenant_read',
     'procurement:read',
     'procurement:write',
-    'audit:read',
-    'audit:investigate',
     'members:manage',
-  ],
-  pengurus: [
-    'stock:read',
-    'stock:write',
-    'scan:execute',
-    'finance:read',
-    'finance:write',
-    'finance:approve',
-    'finance:cross_tenant_read',
-    'procurement:read',
-    'procurement:write',
+    'members:invite',
+    'members:approve',
     'audit:read',
-    'audit:investigate',
   ],
+
+  // Input data harian
   kasir: [
     'stock:read',
     'stock:write',
     'scan:execute',
-    'finance:read',
     'procurement:read',
   ],
+
+  // Petani anggota
   anggota: [
     'stock:read',
-    'scan:execute',
     'finance:read',
+    'finance:apply',
     'procurement:read',
+  ],
+
+  // Lembaga pembiayaan eksternal
+  mitra: [
+    'finance:read',
+    'finance:approve',
+    'finance:disburse',
+    'finance:cross_tenant_read',
+    'audit:read',
+  ],
+
+  // Pemerintah / Dinas Pertanian
+  dinas: [
+    'finance:read',
+    'finance:approve',
+    'finance:cross_tenant_read',
+    'procurement:read',
+    'audit:read',
+    'audit:investigate',
   ],
 };
 

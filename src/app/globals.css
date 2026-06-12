@@ -10,8 +10,12 @@
     --color-brand-200: #a8d0a8;
     --color-brand-400: #5a9e5a;
     --color-brand-600: #3a7a3a;
+    --color-brand-700: #2d6a2d;
     --color-brand-800: #1e4a1e;
     --color-brand-900: #0f2a0f;
+
+    /* Alias */
+    --color-surface-base: #fafaf8;
 
     /* Amber */
     --color-amber-400: #d97706;
@@ -37,10 +41,10 @@
     --color-grade-d: #ea580c;
     --color-grade-f: #dc2626;
 
-    /* Typography */
-    --font-display: 'Instrument Serif', Georgia, serif;
-    --font-body:    'Inter', system-ui, sans-serif;
-    --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    /* Typography — terhubung ke next/font (lihat layout.tsx) */
+    --font-display: var(--font-instrument, 'Instrument Serif'), Georgia, serif;
+    --font-body:    var(--font-inter, 'Inter'), system-ui, sans-serif;
+    --font-mono:    var(--font-jetbrains, 'JetBrains Mono'), 'Courier New', monospace;
 
     /* Type scale */
     --text-xs:   0.75rem;
@@ -180,5 +184,65 @@
     font-size: var(--text-xs);
     color: var(--color-text-muted);
     margin-top: 0.25rem;
+  }
+}
+
+/* ============================================================
+   Animasi untuk halaman auth (Lottie placeholder & micro-UI)
+   ============================================================ */
+@layer utilities {
+  @keyframes arta-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+
+  @keyframes arta-sway {
+    0%, 100% { transform: rotate(-3deg); }
+    50%      { transform: rotate(3deg); }
+  }
+
+  @keyframes arta-pulse-ring {
+    0%   { transform: scale(0.85); opacity: 0.5; }
+    70%  { transform: scale(1.15); opacity: 0; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+
+  @keyframes arta-drift {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    20%  { opacity: 0.7; }
+    100% { transform: translateY(-46px) translateX(8px); opacity: 0; }
+  }
+
+  @keyframes arta-shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  @keyframes arta-rise {
+    0%   { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes arta-spin {
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes arta-scanline {
+    0%   { top: 6%;  opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { top: 94%; opacity: 0; }
+  }
+
+  .animate-arta-float  { animation: arta-float 6s var(--ease-in-out) infinite; }
+  .animate-arta-sway   { animation: arta-sway 4.5s var(--ease-in-out) infinite; transform-origin: bottom center; }
+  .animate-arta-rise     { animation: arta-rise var(--duration-slow) var(--ease-out) both; }
+  .animate-arta-spin     { animation: arta-spin 0.7s linear infinite; }
+  .animate-arta-scanline { animation: arta-scanline 2.4s var(--ease-in-out) infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-arta-float,
+    .animate-arta-sway,
+    .animate-arta-scanline,
+    .animate-arta-rise { animation: none; }
   }
 }

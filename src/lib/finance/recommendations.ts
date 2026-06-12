@@ -1,7 +1,7 @@
 import type { LoanApplication } from '@/types/finance';
 
 type Decision = 'approve' | 'review' | 'reject';
-type Validator = 'pengurus' | 'dinas';
+type Validator = 'bendahara' | 'dinas';
 
 interface LoanRecommendation {
   decision: Decision;
@@ -29,16 +29,16 @@ export async function generateLoanRecommendation(
   if (creditScore < REVIEW_THRESHOLD) {
     reasons.push(`Skor kredit ${creditScore} masuk rentang tinjauan ${AUTO_REJECT_THRESHOLD}-${REVIEW_THRESHOLD - 1}`);
     reasons.push('Pengajuan diteruskan ke pengurus dengan catatan untuk ditinjau lebih lanjut');
-    return { decision: 'review', reasons, nextValidator: 'pengurus' };
+    return { decision: 'review', reasons, nextValidator: 'bendahara' };
   }
 
   if (hasArrears) {
     reasons.push('Skor kredit baik namun masih ada tunggakan aktif di koperasi lain');
     reasons.push('Pengajuan diteruskan ke pengurus untuk verifikasi tunggakan');
-    return { decision: 'review', reasons, nextValidator: 'pengurus' };
+    return { decision: 'review', reasons, nextValidator: 'bendahara' };
   }
 
   reasons.push(`Skor kredit ${creditScore} memenuhi syarat persetujuan`);
   reasons.push('Pengajuan diteruskan ke pengurus untuk validasi tahap pertama');
-  return { decision: 'approve', reasons, nextValidator: 'pengurus' };
+  return { decision: 'approve', reasons, nextValidator: 'bendahara' };
 }

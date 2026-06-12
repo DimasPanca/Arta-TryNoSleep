@@ -14,12 +14,20 @@ export default function HomePage(): React.JSX.Element {
           Platform digitalisasi koperasi pertanian multi-tenant.
           Traceability sayuran, manajemen stok, dan keuangan koperasi dalam satu sistem.
         </p>
-        <a
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-brand-600)] text-white font-medium text-sm hover:bg-[var(--color-brand-700)] transition-colors"
-        >
-          Masuk ke Dashboard
-        </a>
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <a
+            href="/login"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-brand-600)] text-white font-medium text-sm hover:bg-[var(--color-brand-700)] transition-colors"
+          >
+            Masuk
+          </a>
+          <a
+            href="/register"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-medium text-sm hover:bg-[var(--color-brand-50)] transition-colors"
+          >
+            Daftar Anggota
+          </a>
+        </div>
       </div>
     </main>
   );
