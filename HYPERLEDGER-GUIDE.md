@@ -93,6 +93,8 @@ Semua request menggunakan format yang sama:
 
 - `POST /transactions` → untuk write (invoke, mengubah state ledger)
 - `POST /evaluate`     → untuk read (query, tidak mengubah state ledger)
+- `POST /api/v1/{tenant}/transactions` → multi-tenant write (gateway routing, path diabaikan oleh chaincode)
+- `POST /api/v1/{tenant}/evaluate`     → multi-tenant read
 - `args` selalu array of string
 - Jika argumen adalah objek, dikirim sebagai `JSON.stringify(objek)` — parse dengan `JSON.parse` di dalam chaincode
 
@@ -454,7 +456,11 @@ HTTP 500
 
 ```bash
 # .env.local di sisi Next.js
-HYPERLEDGER_API_URL=https://your-fabric-gateway.example.com
+# Opsi 1 — akses lokal (HTTP, tanpa TLS):
+HYPERLEDGER_API_URL=http://172.16.2.205:4000
+
+# Opsi 2 — akses publik via ngrok (HTTPS, Let's Encrypt):
+# HYPERLEDGER_API_URL=https://unburned-crying-scurvy.ngrok-free.dev
 ```
 
 Tidak ada trailing slash. Frontend menggabungkan langsung:
@@ -499,9 +505,21 @@ CHAINCODE stock-trace — 3 fungsi:
 3. GetBatchesByTenant(tenantId)
    Response: TraceHistoryResponse[]
 
-CHAINCODE credit-history — 5 fungsi:
+TENANT_NAME mapping (gunakan di chaincode):
+  PadiwangiMSP    → "Koperasi Padiwangi"
+  MelatiJayaMSP   → "Koperasi Melati Jaya"
+  SumberMakmurMSP → "Koperasi Sumber Makmur"
+  TirtaBersamaMSP → "Koperasi Tirta Bersama"
+  HarapanBaruMSP  → "Koperasi Harapan Baru"
+  DinasMSP        → "Dinas Koperasi"
+
+Composite key untuk GetCreditHistory:
+  - applicant~appId → bisa query partial composite key untuk cari semua pinjaman applicant
+
+CHAINCODE credit-history — 7 fungsi:
 1. SubmitLoanApplication(applicationJSON)
    applicationJSON: { applicationId, applicantId, targetTenantId, amount, purpose, submittedAt }
+   Simpan composite key: applicant~appId + tenant~appId
    Response: { txId, status, timestamp }
 
 2. AutoEvaluate(applicationId)
@@ -511,6 +529,7 @@ CHAINCODE credit-history — 5 fungsi:
    Response: { applicationId, verdict, reason, evaluatedAt }
 
 3. GetCreditHistory(applicantId)
+   Query ledger pakai partial composite key applicant~appId.
    Ambil riwayat kredit lintas koperasi.
    Response: { applicantId, entries: [{ tenantId, tenantName, totalLoans, settledLoans, activeArrears, lastUpdated }] }
 
@@ -520,23 +539,36 @@ CHAINCODE credit-history — 5 fungsi:
    Response: { txId, status, timestamp }
 
 5. GetPortfolioData(tenantId, periodStart, periodEnd)
-   Data stok + pinjaman dari ledger, ditandatangani MSP koperasi.
+   Data stok (via cross-chaincode ke stock-trace) + pinjaman dari ledger.
    Response: { tenantId, tenantName, period, stockSummary, loanSummary, signature, signedAt, blockHeight }
+
+6. MarkLoanOverdue(applicationId)
+   Tandai satu pinjaman sebagai overdue. Update composite key data.
+   Response: { txId, status, timestamp }
+
+7. SettleLoan(applicationId)
+   Tandai satu pinjaman sebagai settled/lunas. Update composite key data.
+   Response: { txId, status, timestamp }
 ```
 
 ---
 
 ## Checklist Sebelum Serah Terima ke Frontend
 
-- [ ] Channel `arta-channel` aktif, semua koperasi sudah join
-- [ ] Chaincode `stock-trace` di-deploy dan ter-commit
-- [ ] Chaincode `credit-history` di-deploy dan ter-commit
-- [ ] `RecordStockEvent` bisa dipanggil dan mengembalikan `{ txId, status, timestamp }`
-- [ ] `GetTraceHistory` mengembalikan `{ batchId, entries: [...] }`
-- [ ] `GetCreditHistory` mengembalikan data lintas koperasi
-- [ ] `AutoEvaluate` mengembalikan `verdict: "rejected"` atau `"pending_pengurus"`
-- [ ] `ValidatorDecision` enforce urutan pengurus sebelum dinas
-- [ ] `GetPortfolioData` mengembalikan data dengan field `signature` dan `blockHeight`
+- [x] Channel `arta-channel` aktif, semua koperasi sudah join
+- [x] Chaincode `stock-trace` di-deploy dan ter-commit (v1.2.0, seq 3)
+- [x] Chaincode `credit-history` di-deploy dan ter-commit (v1.2.0, seq 3)
+- [x] `RecordStockEvent` bisa dipanggil dan mengembalikan `{ txId, status, timestamp }`
+- [x] `GetTraceHistory` mengembalikan `{ batchId, entries: [...] }`
+- [x] `GetBatchesByTenant` mengembalikan array batch per tenant
+- [x] `GetCreditHistory` mengembalikan data lintas koperasi (via composite key `applicant~appId`)
+- [x] `AutoEvaluate` mengembalikan `verdict: "rejected"` atau `"pending_pengurus"`
+- [x] `ValidatorDecision` enforce urutan pengurus sebelum dinas
+- [x] `GetPortfolioData` mengembalikan data dengan field `signature` dan `blockHeight` (cross-chaincode ke stock-trace ✅)
+- [x] `MarkLoanOverdue` — tandai pinjaman overdue
+- [x] `SettleLoan` — tandai pinjaman lunas
+- [x] Multi-tenant endpoints (`/api/v1/padiwangi/evaluate`) bisa diakses
 - [ ] Semua error dikembalikan sebagai HTTP non-2xx
-- [ ] URL gateway sudah dikirim ke tim frontend untuk diisi ke `HYPERLEDGER_API_URL`
-- [ ] Gateway bisa diakses dari environment Vercel (bukan hanya localhost)
+- [x] URL gateway sudah dikirim ke tim frontend: `http://172.16.2.205:4000`
+- [x] Tunnel lokal → publik: `https://unburned-crying-scurvy.ngrok-free.dev` (via ngrok, Let's Encrypt TLS)
+- [ ] Gateway bisa diakses dari environment Vercel (bukan hanya localhost) — **pakai ngrok URL di atas**
