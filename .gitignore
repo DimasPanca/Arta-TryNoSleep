@@ -1,5 +1,9 @@
 node_modules/
 .next/
+
+# Hyperledger Fabric - generated network artifacts
+hyperledger/network/crypto-config/
+hyperledger/network/channel-artifacts/
 out/
 build/
 dist/
