@@ -21,6 +21,10 @@ next-env.d.ts
 # Diganti dengan .eslintrc.json (dengan dot)
 eslintrc.json
 
+# Dokumentasi lokal — tidak perlu masuk repo
+docs/
+raw/
+
 # AI tools & editor configs — tidak perlu masuk repo
 .agent/
 .claude/

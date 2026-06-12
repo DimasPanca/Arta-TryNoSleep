@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { recordBatchReceived } from '@/lib/blockchain/record';
 import { createServerClient } from '@/lib/supabase/server';
 import type { ScanResult } from '@/types/scan';
 import type { QualityGrade } from '@/types/stock';
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const createBatch = b.createBatch === true && quantityKg > 0;
 
   let batchId: string | null = null;
+  let txId: string | null = null;
 
   if (createBatch) {
     const days = SHELF_LIFE_DAYS[result.grade];
@@ -109,6 +111,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ok: false, error: 'Gagal membuat batch stok.' }, { status: 500 });
     }
     batchId = (batch as { id: string }).id;
+
+    // Auto-anchor ke Hyperledger Fabric
+    try {
+      const tx = await recordBatchReceived({
+        batchId,
+        tenantId,
+        commodity,
+        quantityKg,
+        grade: result.grade,
+        qualityScore: result.qualityScore,
+        receivedAt: new Date().toISOString(),
+        operatorId: user.id,
+      });
+      txId = tx.txId;
+
+      await supabase.from('stock_batches').update({ blockchain_tx: txId }).eq('id', batchId);
+    } catch (error) {
+      console.error('[api/scan/save] Auto-anchor ke Fabric gagal (batch tetap tersimpan):', error);
+      // Anchor gagal — batch & scan_record tetap disimpan, blockchain_tx null.
+      // User bisa anchor manual nanti lewat /api/stock/anchor.
+    }
   }
 
   const { error: scanError } = await supabase.from('scan_records').insert({
@@ -132,5 +155,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'Gagal menyimpan hasil scan.' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, batchId });
+  return NextResponse.json({ ok: true, batchId, txId: typeof txId === 'string' ? txId : null });
 }

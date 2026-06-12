@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildGradingPrompt } from '@/lib/vision/prompts';
 import type { ScanResult } from '@/types/scan';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 const VALID_GRADES = ['A', 'B', 'C', 'D', 'F'] as const;
 const VALID_RIPENESS = ['unripe', 'semi_ripe', 'ripe', 'overripe'] as const;
