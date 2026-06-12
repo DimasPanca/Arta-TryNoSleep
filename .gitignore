@@ -2,6 +2,7 @@ node_modules/
 .next/
 out/
 build/
+dist/
 
 .env
 .env.local
@@ -38,3 +39,7 @@ eslintrc.json
 .windsurf/
 skills/
 SKILL.md
+
+# Dataset and docs
+docs/
+raw/
