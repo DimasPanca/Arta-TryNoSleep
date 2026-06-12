@@ -1,5 +1,18 @@
 import { Context, Contract, Info, Returns, Transaction } from 'fabric-contract-api';
 
+interface TraceEntry {
+    txId: string;
+    timestamp: string;
+    tenantId: string;
+    action: string;
+    data: Record<string, unknown>;
+}
+
+interface BatchHistory {
+    batchId: string;
+    entries: TraceEntry[];
+}
+
 @Info({ title: 'StockTrace', description: 'Smart contract untuk pelacakan stok' })
 export class StockTraceContract extends Contract {
     @Transaction()
@@ -10,7 +23,7 @@ export class StockTraceContract extends Contract {
         const timestamp = ctx.stub.getTxTimestamp();
         const timeString = new Date(timestamp.seconds.low * 1000).toISOString();
 
-        const newEntry = {
+        const newEntry: TraceEntry = {
             txId: txId,
             timestamp: timeString,
             tenantId: record.tenantId,
@@ -19,10 +32,10 @@ export class StockTraceContract extends Contract {
         };
 
         const existingDataBytes = await ctx.stub.getState(batchId);
-        let history = { batchId: batchId, entries: [] as any[] };
-        
+        let history: BatchHistory = { batchId: batchId, entries: [] };
+
         if (existingDataBytes && existingDataBytes.length > 0) {
-            history = JSON.parse(existingDataBytes.toString());
+            history = JSON.parse(existingDataBytes.toString()) as BatchHistory;
         }
 
         history.entries.push(newEntry);
@@ -52,21 +65,21 @@ export class StockTraceContract extends Contract {
     @Returns('string')
     public async GetBatchesByTenant(ctx: Context, tenantId: string): Promise<string> {
         const iterator = await ctx.stub.getStateByPartialCompositeKey('tenant~batch', [tenantId]);
-        const allResults: any[] = [];
+        const allResults: BatchHistory[] = [];
         let result = await iterator.next();
-        
+
         while (!result.done) {
             const splitKey = ctx.stub.splitCompositeKey(result.value.key);
             const batchId = splitKey.attributes[1];
-            
+
             const batchBytes = await ctx.stub.getState(batchId);
             if (batchBytes && batchBytes.length > 0) {
-                allResults.push(JSON.parse(batchBytes.toString()));
+                allResults.push(JSON.parse(batchBytes.toString()) as BatchHistory);
             }
             result = await iterator.next();
         }
         await iterator.close();
-        
+
         return JSON.stringify(allResults);
     }
 }
