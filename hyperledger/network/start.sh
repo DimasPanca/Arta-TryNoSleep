@@ -12,15 +12,15 @@ mkdir channel-artifacts
 
 echo "=== 2. Generate Material Kripto (Sertifikat & Kunci) ==="
 # Gunakan docker image fabric-tools agar tidak perlu install binari secara lokal
-docker run --rm -v $(pwd):/data hyperledger/fabric-tools:2.5 \
+docker run --rm --user "$(id -u):$(id -g)" -v $(pwd):/data hyperledger/fabric-tools:2.5 \
     cryptogen generate --config=/data/crypto-config.yaml --output=/data/crypto-config
 
 echo "=== 3. Generate Genesis Block & Channel Transaction ==="
-docker run --rm -v $(pwd):/data -e FABRIC_CFG_PATH=/data hyperledger/fabric-tools:2.5 \
+docker run --rm --user "$(id -u):$(id -g)" -v $(pwd):/data -e FABRIC_CFG_PATH=/data hyperledger/fabric-tools:2.5 \
     configtxgen -profile ArtaGenesis -channelID system-channel -outputBlock /data/channel-artifacts/genesis.block
 
-docker run --rm -v $(pwd):/data -e FABRIC_CFG_PATH=/data hyperledger/fabric-tools:2.5 \
-    configtxgen -profile ArtaGenesis -outputCreateChannelTx /data/channel-artifacts/arta-channel.tx -channelID arta-channel
+docker run --rm --user "$(id -u):$(id -g)" -v $(pwd):/data -e FABRIC_CFG_PATH=/data hyperledger/fabric-tools:2.5 \
+    configtxgen -profile ArtaChannel -outputCreateChannelTx /data/channel-artifacts/arta-channel.tx -channelID arta-channel
 
 echo "=== 4. Menyalakan Docker Network ==="
 docker-compose up -d
@@ -32,7 +32,9 @@ echo "=== 5. Create Channel (arta-channel) ==="
 docker exec -e CORE_PEER_LOCALMSPID=PadiwangiMSP \
     -e CORE_PEER_ADDRESS=peer0.padiwangi.arta.com:7051 \
     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/padiwangi.arta.com/users/Admin@padiwangi.arta.com/msp \
-    cli peer channel create -o orderer.example.com:7050 -c arta-channel -f ./channel-artifacts/arta-channel.tx
+    -e ORDERER_GENERAL_TLS_ROOTCAS=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt \
+    -e ORDERER_GENERAL_TLS_ENABLED=true \
+    cli peer channel create -o orderer.example.com:7050 -c arta-channel -f ./channel-artifacts/arta-channel.tx --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
 
 echo "=== 6. Join Channel untuk semua Peer ==="
 PEERS=(
@@ -45,12 +47,15 @@ PEERS=(
 )
 
 for PEER_INFO in "${PEERS[@]}"; do
-    IFS=':' read -r MSP_ID PEER_ADDR PORT DOMAIN <<< "$PEER_INFO"
+    IFS=':' read -r MSP_ID PEER_HOST PORT DOMAIN <<< "$PEER_INFO"
+    PEER_ADDR="${PEER_HOST}:${PORT}"
     echo "Bergabung $MSP_ID ($PEER_ADDR) ke arta-channel..."
     docker exec -e CORE_PEER_LOCALMSPID=$MSP_ID \
         -e CORE_PEER_ADDRESS=$PEER_ADDR \
         -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/$DOMAIN/users/Admin@$DOMAIN/msp \
-        cli peer channel join -b arta-channel.block
+        -e ORDERER_GENERAL_TLS_ROOTCAS=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt \
+        -e ORDERER_GENERAL_TLS_ENABLED=true \
+        cli peer channel join -b arta-channel.block --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
 done
 
 echo "=========================================================="
