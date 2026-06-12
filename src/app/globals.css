@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand — hijau tanah */
+    --color-brand-50:  #f0f7f0;
+    --color-brand-100: #d4e8d4;
+    --color-brand-200: #a8d0a8;
+    --color-brand-400: #5a9e5a;
+    --color-brand-600: #3a7a3a;
+    --color-brand-800: #1e4a1e;
+    --color-brand-900: #0f2a0f;
+
+    /* Amber */
+    --color-amber-400: #d97706;
+    --color-amber-100: #fef3c7;
+
+    /* Danger */
+    --color-danger-400: #dc2626;
+    --color-danger-100: #fee2e2;
+
+    /* Neutrals */
+    --color-surface:          #fafaf8;
+    --color-surface-card:     #ffffff;
+    --color-border:           #e5e5e2;
+    --color-border-strong:    #c5c5c0;
+    --color-text-primary:     #1a1a18;
+    --color-text-secondary:   #6b6b65;
+    --color-text-muted:       #9b9b95;
+
+    /* Grade badge */
+    --color-grade-a: #16a34a;
+    --color-grade-b: #2563eb;
+    --color-grade-c: #d97706;
+    --color-grade-d: #ea580c;
+    --color-grade-f: #dc2626;
+
+    /* Typography */
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-body:    'Inter', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+    /* Type scale */
+    --text-xs:   0.75rem;
+    --text-sm:   0.875rem;
+    --text-base: 1rem;
+    --text-lg:   1.125rem;
+    --text-xl:   1.25rem;
+    --text-2xl:  1.5rem;
+    --text-4xl:  2.25rem;
+
+    /* Motion */
+    --duration-fast:   150ms;
+    --duration-normal: 250ms;
+    --duration-slow:   400ms;
+
+    --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
+  [data-theme="dark"] {
+    --color-surface:          #141412;
+    --color-surface-card:     #1e1e1c;
+    --color-border:           #2a2a28;
+    --color-border-strong:    #3a3a38;
+    --color-text-primary:     #f0f0ec;
+    --color-text-secondary:   #a0a09a;
+    --color-text-muted:       #606058;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-body);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Grade badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.5rem;
+  }
+
+  .badge-md {
+    font-size: var(--text-xs);
+    padding: 0.125rem 0.5rem;
+  }
+
+  .badge-sm {
+    font-size: 0.625rem;
+    padding: 0.0625rem 0.375rem;
+  }
+
+  .badge-score {
+    font-family: var(--font-mono);
+    opacity: 0.75;
+  }
+
+  .badge-grade-a {
+    background-color: #dcfce7;
+    color: var(--color-grade-a);
+  }
+
+  .badge-grade-b {
+    background-color: #dbeafe;
+    color: var(--color-grade-b);
+  }
+
+  .badge-grade-c {
+    background-color: var(--color-amber-100);
+    color: var(--color-grade-c);
+  }
+
+  .badge-grade-d {
+    background-color: #ffedd5;
+    color: var(--color-grade-d);
+  }
+
+  .badge-grade-f {
+    background-color: var(--color-danger-100);
+    color: var(--color-grade-f);
+  }
+
+  /* Stat card */
+  .stat-card {
+    background-color: var(--color-surface-card);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: var(--text-4xl);
+    color: var(--color-text-primary);
+    line-height: 1;
+  }
+
+  .stat-unit {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .stat-trend {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+}
