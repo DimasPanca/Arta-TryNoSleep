@@ -1,0 +1,78 @@
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: crypto-config/ordererOrganizations/example.com/msp
+
+  - &PadiwangiMSP
+    Name: PadiwangiMSP
+    ID: PadiwangiMSP
+    MSPDir: crypto-config/peerOrganizations/padiwangi.arta.com/msp
+
+  - &MelatiJayaMSP
+    Name: MelatiJayaMSP
+    ID: MelatiJayaMSP
+    MSPDir: crypto-config/peerOrganizations/melatijaya.arta.com/msp
+
+  - &SumberMakmurMSP
+    Name: SumberMakmurMSP
+    ID: SumberMakmurMSP
+    MSPDir: crypto-config/peerOrganizations/sumbermakmur.arta.com/msp
+
+  - &TirtaBersamaMSP
+    Name: TirtaBersamaMSP
+    ID: TirtaBersamaMSP
+    MSPDir: crypto-config/peerOrganizations/tirtabersama.arta.com/msp
+
+  - &HarapanBaruMSP
+    Name: HarapanBaruMSP
+    ID: HarapanBaruMSP
+    MSPDir: crypto-config/peerOrganizations/harapanbaru.arta.com/msp
+
+  - &DinasMSP
+    Name: DinasMSP
+    ID: DinasMSP
+    MSPDir: crypto-config/peerOrganizations/dinas.arta.com/msp
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.example.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Profiles:
+  ArtaGenesis:
+    <<: *ChannelCapabilities
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *PadiwangiMSP
+        - *MelatiJayaMSP
+        - *SumberMakmurMSP
+        - *TirtaBersamaMSP
+        - *HarapanBaruMSP
+        - *DinasMSP
