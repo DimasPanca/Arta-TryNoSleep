@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "$0")"
+
 echo "=== Mematikan Docker Network & Membersihkan Data ==="
 docker-compose down -v
 rm -rf crypto-config channel-artifacts

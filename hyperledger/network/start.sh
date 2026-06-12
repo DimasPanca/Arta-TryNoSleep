@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Pastikan script dijalankan di dalam directory network/ 
+# agar docker-compose dan file konfigurasi bisa ditemukan.
+cd "$(dirname "$0")"
+
 echo "=== 1. Membersihkan environment sebelumnya ==="
 docker-compose down -v
 rm -rf crypto-config channel-artifacts
