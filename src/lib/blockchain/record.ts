@@ -85,3 +85,37 @@ export async function recordValidatorDecision(
     payload,
   );
 }
+
+/**
+ * Catat pengadaan bersama lintas koperasi ke Hyperledger Fabric agar alokasi
+ * & harga immutable dan bisa diverifikasi tiap koperasi peserta. Dicatat di
+ * channel stock-trace karena ini bagian dari rantai pasok. Bersifat
+ * best-effort — pemanggil sebaiknya membungkus dalam try/catch.
+ */
+export interface ProcurementRecord {
+  procurementId: string;
+  commodity: string;
+  unit: string;
+  initiatorMspId: string;
+  supplierName: string;
+  unitPrice: number;
+  totalQuantity: number;
+  participants: Array<{ mspId: string; allocatedQty: number }>;
+  recordedAt: string;
+}
+
+export async function recordProcurementEvent(
+  record: ProcurementRecord,
+): Promise<BlockchainSubmitResponse> {
+  const payload: FabricSubmitPayload = {
+    channelid: CHANNEL_ID,
+    chaincodeid: CHAINCODE_STOCK,
+    function: 'RecordProcurementEvent',
+    args: ['joint_procurement', JSON.stringify(record)],
+  };
+
+  return fabricPost<FabricSubmitPayload, BlockchainSubmitResponse>(
+    '/transactions',
+    payload,
+  );
+}

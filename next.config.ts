@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@anthropic-ai/sdk'],
   images: {
     remotePatterns: [],
+    
   },
   async headers() {
     return [
@@ -19,3 +20,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+

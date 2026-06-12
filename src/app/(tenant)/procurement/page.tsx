@@ -1,35 +1,58 @@
 import type { Metadata } from 'next';
 import type React from 'react';
 
+import { ProcurementWorkspace } from '@/components/procurement/ProcurementWorkspace';
+import { hasPermission } from '@/constants/roles';
+import { getDashboardIdentity } from '@/lib/auth/identity';
+import { MELATI_JAYA_ID } from '@/lib/procurement/cooperatives';
+import { getProcurementFabricStatus } from '@/lib/procurement/fabric';
+import { SAMPLE_PROCUREMENTS } from '@/lib/procurement/samples';
+
 export const metadata: Metadata = {
-  title: 'Pengadaan — Arta',
+  title: 'Pengadaan Bersama — Arta',
 };
 
-export default function ProcurementPage(): React.JSX.Element {
-  return <ComingSoon title="Pengadaan" desc="Kelola pengadaan bersama, realisasi pembelian, dan distribusi ke anggota." />;
+export const dynamic = 'force-dynamic';
+
+export default async function ProcurementPage(): Promise<React.JSX.Element> {
+  const identity = await getDashboardIdentity();
+
+  if (!hasPermission(identity.role, 'procurement:read')) {
+    return <NoAccess />;
+  }
+
+  const canCreate = hasPermission(identity.role, 'procurement:write');
+  const tenantId = identity.tenantId ?? MELATI_JAYA_ID;
+  const tenantName = identity.tenantId ? identity.tenantName : 'Koperasi Melati Jaya';
+
+  const fabric = await getProcurementFabricStatus(tenantId);
+
+  // Saat ini sumber data pengadaan adalah fixtures jejaring 5 koperasi.
+  // Jalur DB nyata (joint_procurements) di-wire bertahap via API; halaman
+  // tetap fungsional & informatif tanpa bergantung pada koneksi Fabric.
+  return (
+    <ProcurementWorkspace
+      orders={SAMPLE_PROCUREMENTS}
+      tenantName={tenantName}
+      fabric={fabric}
+      canCreate={canCreate}
+      preview={identity.preview}
+    />
+  );
 }
 
-function ComingSoon({ title, desc }: { title: string; desc: string }): React.JSX.Element {
+function NoAccess(): React.JSX.Element {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--color-brand-100)]">
-        <svg viewBox="0 0 24 24" className="h-7 w-7 text-[var(--color-brand-600)]" fill="none" aria-hidden>
-          <path
-            d="M4 5h2l2 11h9l2-7H7M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm8 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
+    <div className="mx-auto max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-8 text-center">
+      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--color-amber-100)] text-[var(--color-amber-400)]">
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden>
+          <path d="M12 9v4m0 4h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </span>
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{title}</h1>
-        <p className="mt-1 max-w-sm text-sm text-[var(--color-text-secondary)]">{desc}</p>
-      </div>
-      <span className="rounded-full bg-[var(--color-amber-100)] px-3 py-1 text-xs font-semibold text-[var(--color-amber-400)]">
-        Segera hadir
-      </span>
+      <h1 className="mt-3 text-base font-semibold text-[var(--color-text-primary)]">Akses pengadaan tidak tersedia</h1>
+      <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+        Peran Anda tidak memiliki izin melihat modul pengadaan.
+      </p>
     </div>
   );
 }
