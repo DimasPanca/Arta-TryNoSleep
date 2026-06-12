@@ -1,3 +1,3 @@
-import { CreditHistoryContract } from './creditHistory';
-export { CreditHistoryContract } from './creditHistory';
+import { CreditHistoryContract } from './credit-history';
+export { CreditHistoryContract } from './credit-history';
 export const contracts: any[] = [CreditHistoryContract];

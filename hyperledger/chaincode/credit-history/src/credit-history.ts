@@ -5,7 +5,13 @@ export class CreditHistoryContract extends Contract {
 
     @Transaction()
     public async SubmitLoanApplication(ctx: Context, applicationJSON: string): Promise<string> {
-        const app = JSON.parse(applicationJSON);
+        let app;
+        try {
+            app = JSON.parse(applicationJSON);
+        } catch (error) {
+            throw new Error("Payload JSON tidak valid. Pastikan data berformat JSON string.");
+        }
+        
         const txId = ctx.stub.getTxID();
         const timestamp = ctx.stub.getTxTimestamp();
         const timeString = new Date(timestamp.seconds.low * 1000).toISOString();
@@ -29,12 +35,30 @@ export class CreditHistoryContract extends Contract {
         const app = JSON.parse(appBytes.toString());
         const applicantId = app.applicantId;
 
+        const historyJsonStr = await this.GetCreditHistory(ctx, applicantId);
+        const history = JSON.parse(historyJsonStr);
+
+        let totalPinjaman = 0;
+        let totalTunggakan = 0;
+
+        for (const entry of history.entries) {
+            totalPinjaman += entry.totalLoans;
+            totalTunggakan += entry.activeArrears;
+        }
+
         let verdict = "pending_pengurus";
         let reason = "clean_history";
 
-        if (applicantId === "BAD_APPLICANT") {
-             verdict = "rejected";
-             reason = "auto_reject_high_default";
+        if (totalPinjaman > 0) {
+            const rasioTunggakan = totalTunggakan / totalPinjaman;
+            
+            if (rasioTunggakan > 0.5 && totalTunggakan > 2) {
+                verdict = "rejected";
+                reason = "auto_reject_high_default";
+            } else if (totalTunggakan > 0) {
+                verdict = "pending_pengurus";
+                reason = "minor_arrears_detected";
+            }
         }
 
         return JSON.stringify({
