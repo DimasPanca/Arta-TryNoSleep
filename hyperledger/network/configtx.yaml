@@ -3,36 +3,106 @@ Organizations:
     Name: OrdererOrg
     ID: OrdererMSP
     MSPDir: crypto-config/ordererOrganizations/example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
 
   - &PadiwangiMSP
     Name: PadiwangiMSP
     ID: PadiwangiMSP
     MSPDir: crypto-config/peerOrganizations/padiwangi.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('PadiwangiMSP.admin', 'PadiwangiMSP.peer', 'PadiwangiMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('PadiwangiMSP.admin', 'PadiwangiMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('PadiwangiMSP.admin')"
 
   - &MelatiJayaMSP
     Name: MelatiJayaMSP
     ID: MelatiJayaMSP
     MSPDir: crypto-config/peerOrganizations/melatijaya.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('MelatiJayaMSP.admin', 'MelatiJayaMSP.peer', 'MelatiJayaMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('MelatiJayaMSP.admin', 'MelatiJayaMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('MelatiJayaMSP.admin')"
 
   - &SumberMakmurMSP
     Name: SumberMakmurMSP
     ID: SumberMakmurMSP
     MSPDir: crypto-config/peerOrganizations/sumbermakmur.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('SumberMakmurMSP.admin', 'SumberMakmurMSP.peer', 'SumberMakmurMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('SumberMakmurMSP.admin', 'SumberMakmurMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('SumberMakmurMSP.admin')"
 
   - &TirtaBersamaMSP
     Name: TirtaBersamaMSP
     ID: TirtaBersamaMSP
     MSPDir: crypto-config/peerOrganizations/tirtabersama.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('TirtaBersamaMSP.admin', 'TirtaBersamaMSP.peer', 'TirtaBersamaMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('TirtaBersamaMSP.admin', 'TirtaBersamaMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('TirtaBersamaMSP.admin')"
 
   - &HarapanBaruMSP
     Name: HarapanBaruMSP
     ID: HarapanBaruMSP
     MSPDir: crypto-config/peerOrganizations/harapanbaru.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('HarapanBaruMSP.admin', 'HarapanBaruMSP.peer', 'HarapanBaruMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('HarapanBaruMSP.admin', 'HarapanBaruMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('HarapanBaruMSP.admin')"
 
   - &DinasMSP
     Name: DinasMSP
     ID: DinasMSP
     MSPDir: crypto-config/peerOrganizations/dinas.arta.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('DinasMSP.admin', 'DinasMSP.peer', 'DinasMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('DinasMSP.admin', 'DinasMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('DinasMSP.admin')"
 
 Capabilities:
   Channel: &ChannelCapabilities
@@ -44,6 +114,16 @@ Capabilities:
 
 Application: &ApplicationDefaults
   Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
   Capabilities:
     <<: *ApplicationCapabilities
 
@@ -56,17 +136,63 @@ Orderer: &OrdererDefaults
     MaxMessageCount: 10
     AbsoluteMaxBytes: 99 MB
     PreferredMaxBytes: 512 KB
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.example.com
+        Port: 7050
+        ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
   Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
   Capabilities:
     <<: *OrdererCapabilities
 
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
 Profiles:
   ArtaGenesis:
-    <<: *ChannelCapabilities
+    <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
       Organizations:
         - *OrdererOrg
+    Consortiums:
+      SampleConsortium:
+        Organizations:
+          - *PadiwangiMSP
+          - *MelatiJayaMSP
+          - *SumberMakmurMSP
+          - *TirtaBersamaMSP
+          - *HarapanBaruMSP
+          - *DinasMSP
+  
+  ArtaChannel:
+    Consortium: SampleConsortium
+    <<: *ChannelDefaults
     Application:
       <<: *ApplicationDefaults
       Organizations:
