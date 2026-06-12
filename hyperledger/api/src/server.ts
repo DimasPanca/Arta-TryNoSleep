@@ -1,5 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import type { 
+    AutoEvaluateResult, 
+    CreditHistoryResponse, 
+    PortfolioData 
+} from '@/types/blockchain';
 
 const app = express();
 app.use(cors());
@@ -39,9 +44,19 @@ app.post('/evaluate', async (req, res) => {
         
         // Provide mock responses based on function called
         if (funcName === "AutoEvaluate") {
-             res.json({ applicationId: args[0], verdict: "pending_pengurus", reason: "clean_history", evaluatedAt: new Date().toISOString() });
+             const result: AutoEvaluateResult = {
+                 applicationId: args[0], 
+                 verdict: "pending_pengurus", 
+                 reason: "clean_history", 
+                 evaluatedAt: new Date().toISOString()
+             };
+             res.json(result);
         } else if (funcName === "GetCreditHistory") {
-             res.json({ applicantId: args[0], entries: [] });
+             const result: CreditHistoryResponse = {
+                 applicantId: args[0], 
+                 entries: []
+             };
+             res.json(result);
         } else {
              res.json({ mock: "query_result" });
         }
