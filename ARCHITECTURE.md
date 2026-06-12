@@ -152,18 +152,6 @@ arta/
 │       ├── roles.ts                    # Permission matrix per role
 │       └── cold-storage.ts             # Suhu, durasi, jenis sayuran
 │
-├── hyperledger/                        # Hyperledger Fabric (infrastruktur terpisah)
-│   ├── chaincode/                      # Smart contract source
-│   │   ├── credit-history/src/         # Chaincode pinjaman (7 fungsi)
-│   │   └── stock-trace/src/            # Chaincode stok sayuran (3 fungsi)
-│   ├── api/                            # REST API Gateway (Dockerized)
-│   │   └── src/server.ts               # Express server: /transactions, /evaluate
-│   └── network/                        # Fabric network config
-│       ├── docker-compose.yml          # 6 peers, 3 orderers, CLI, CA
-│       ├── configtx.yaml               # Channel genesis + anchor peers
-│       ├── crypto-config.yaml          # MSP & certificate config
-│       └── deploy-chaincode.sh         # Script packaging, install, approve, commit
-│
 ├── supabase/
 │   ├── migrations/                     # SQL migration files (version controlled)
 │   │   ├── 001_initial_schema.sql
@@ -175,7 +163,6 @@ arta/
 ├── .env.local                          # Jangan di-commit!
 ├── .env.example                        # Template env vars (di-commit)
 ├── .gitignore
-├── HYPERLEDGER-GUIDE.md                # Kontrak teknis Hyperledger ↔ Frontend
 ├── next.config.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
@@ -517,9 +504,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Hyperledger Fabric REST API
-# Akses publik (ngrok): https://unburned-crying-scurvy.ngrok-free.dev
-# Akses lokal:          http://172.16.2.205:4000
+# Hyperledger Fabric REST API (dari Winata)
 HYPERLEDGER_API_URL=
 
 # App

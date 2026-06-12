@@ -69,11 +69,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // Jejak immutable ke Hyperledger Fabric (best-effort)
-  // Map internal roles (bendahara/ketua/wakil_ketua) ke chaincode type 'pengurus'
-  const chaincodeValidatorType: 'pengurus' | 'dinas' = m.role === 'dinas' ? 'dinas' : 'pengurus';
   void recordValidatorDecision(applicationId, {
     validatorId: user.id,
-    validatorType: chaincodeValidatorType,
+    validatorType: m.role as InternalValidator,
     verdict,
     reason: reason ?? '',
   }).catch((err) => console.error('[api/finance/decision] Fabric gagal:', err));
