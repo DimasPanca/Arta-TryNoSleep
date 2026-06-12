@@ -6,7 +6,7 @@ export type BlockchainAction =
   | 'quality_updated'
   | 'batch_expired';
 
-export type ValidatorType = 'bendahara' | 'ketua' | 'wakil_ketua' | 'dinas';
+export type ValidatorType = 'pengurus' | 'dinas';
 export type ValidatorVerdict = 'approved' | 'rejected';
 export type AutoVerdict = 'rejected' | 'pending_pengurus';
 
