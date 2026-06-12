@@ -47,3 +47,6 @@ SKILL.md
 # Dataset and docs
 docs/
 raw/
+
+# Chaincode packages (generated)
+hyperledger/chaincode/*/*.tar.gz

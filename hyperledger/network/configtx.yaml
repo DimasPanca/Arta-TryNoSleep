@@ -124,11 +124,14 @@ Application: &ApplicationDefaults
     Admins:
       Type: ImplicitMeta
       Rule: "MAJORITY Admins"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
   Capabilities:
     <<: *ApplicationCapabilities
 
 Orderer: &OrdererDefaults
-  OrdererType: etcdraft
+  OrdererType: solo
   Addresses:
     - orderer.example.com:7050
   BatchTimeout: 2s
@@ -136,12 +139,6 @@ Orderer: &OrdererDefaults
     MaxMessageCount: 10
     AbsoluteMaxBytes: 99 MB
     PreferredMaxBytes: 512 KB
-  EtcdRaft:
-    Consenters:
-      - Host: orderer.example.com
-        Port: 7050
-        ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
-        ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
   Organizations:
   Policies:
     Readers:

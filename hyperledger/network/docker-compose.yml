@@ -14,6 +14,7 @@ x-peer-template: &peer-template
   image: hyperledger/fabric-peer:2.5
   environment:
     - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+    - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
     - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
     - CORE_PEER_TLS_ENABLED=false
     - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
@@ -34,12 +35,10 @@ services:
       - ORDERER_GENERAL_LISTENPORT=7050
       - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
       - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
-      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_ENABLED=false
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=/var/hyperledger/orderer/tls/ca.crt
-      - ORDERER_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
@@ -65,6 +64,7 @@ services:
     container_name: peer0.padiwangi.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.padiwangi.arta.com
       - CORE_PEER_ADDRESS=peer0.padiwangi.arta.com:7051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
@@ -95,6 +95,7 @@ services:
     container_name: peer0.melatijaya.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.melatijaya.arta.com
       - CORE_PEER_ADDRESS=peer0.melatijaya.arta.com:8051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
@@ -125,6 +126,7 @@ services:
     container_name: peer0.sumbermakmur.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.sumbermakmur.arta.com
       - CORE_PEER_ADDRESS=peer0.sumbermakmur.arta.com:9051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
@@ -155,6 +157,7 @@ services:
     container_name: peer0.tirtabersama.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.tirtabersama.arta.com
       - CORE_PEER_ADDRESS=peer0.tirtabersama.arta.com:10051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:10051
@@ -185,6 +188,7 @@ services:
     container_name: peer0.harapanbaru.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.harapanbaru.arta.com
       - CORE_PEER_ADDRESS=peer0.harapanbaru.arta.com:11051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
@@ -215,6 +219,7 @@ services:
     container_name: peer0.dinas.arta.com
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
       - CORE_PEER_ID=peer0.dinas.arta.com
       - CORE_PEER_ADDRESS=peer0.dinas.arta.com:12051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:12051
@@ -243,15 +248,37 @@ services:
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
-      - ORDERER_GENERAL_TLS_ROOTCAS=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
-      - ORDERER_GENERAL_TLS_ENABLED=true
+      - CORE_PEER_TLS_ENABLED=false
+      - ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    command: /bin/bash
+    command: /bin/bash -c 'while true; do sleep 30; done;'
     volumes:
-        - /var/run/docker.sock:/host/var/run/docker.sock
-        - ../chaincode:/opt/gopath/src/github.com/hyperledger/fabric/chaincode
-        - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto
-        - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto
+      - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      - ../chaincode:/opt/gopath/src/github.com/hyperledger/fabric/chaincode
+    networks:
+      - arta_net
+
+  fabric-rest-api:
+    container_name: fabric-rest-api
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npx ts-node src/server.ts"
+    environment:
+      - PORT=4000
+      - PEER_PADIWANGI_ENDPOINT=peer0.padiwangi.arta.com:7051
+      - PEER_MELATIJAYA_ENDPOINT=peer0.melatijaya.arta.com:8051
+      - PEER_SUMBERMAKMUR_ENDPOINT=peer0.sumbermakmur.arta.com:9051
+      - PEER_TIRTABERSAMA_ENDPOINT=peer0.tirtabersama.arta.com:10051
+      - PEER_HARAPANBARU_ENDPOINT=peer0.harapanbaru.arta.com:11051
+      - PEER_DINAS_ENDPOINT=peer0.dinas.arta.com:12051
+      - CRYPTO_PATH=/app/crypto-config/peerOrganizations
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../api:/app
+      - ./crypto-config:/app/crypto-config
     networks:
       - arta_net
     depends_on:

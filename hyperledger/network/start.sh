@@ -32,9 +32,7 @@ echo "=== 5. Create Channel (arta-channel) ==="
 docker exec -e CORE_PEER_LOCALMSPID=PadiwangiMSP \
     -e CORE_PEER_ADDRESS=peer0.padiwangi.arta.com:7051 \
     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/padiwangi.arta.com/users/Admin@padiwangi.arta.com/msp \
-    -e ORDERER_GENERAL_TLS_ROOTCAS=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt \
-    -e ORDERER_GENERAL_TLS_ENABLED=true \
-    cli peer channel create -o orderer.example.com:7050 -c arta-channel -f ./channel-artifacts/arta-channel.tx --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
+    cli peer channel create -o orderer.example.com:7050 -c arta-channel -f ./channel-artifacts/arta-channel.tx
 
 echo "=== 6. Join Channel untuk semua Peer ==="
 PEERS=(
@@ -53,9 +51,7 @@ for PEER_INFO in "${PEERS[@]}"; do
     docker exec -e CORE_PEER_LOCALMSPID=$MSP_ID \
         -e CORE_PEER_ADDRESS=$PEER_ADDR \
         -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/$DOMAIN/users/Admin@$DOMAIN/msp \
-        -e ORDERER_GENERAL_TLS_ROOTCAS=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt \
-        -e ORDERER_GENERAL_TLS_ENABLED=true \
-        cli peer channel join -b arta-channel.block --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
+        cli peer channel join -b arta-channel.block
 done
 
 echo "=========================================================="
