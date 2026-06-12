@@ -18,7 +18,7 @@ export async function getAuditLogs(
   tenantId: string,
   filters?: { actorId?: string; startDate?: string; endDate?: string },
 ): Promise<AuditLog[]> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   let query = supabase
     .from('audit_logs')
@@ -48,7 +48,7 @@ export async function getAuditLogs(
 export async function createAuditLog(
   data: Omit<AuditLog, 'id' | 'createdAt' | 'isAnomalous'>,
 ): Promise<AuditLog> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: inserted, error } = await supabase
     .from('audit_logs')
@@ -73,7 +73,7 @@ export async function createAuditLog(
 }
 
 export async function markAsAnomalous(logId: string): Promise<void> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { error } = await supabase
     .from('audit_logs')
@@ -92,10 +92,10 @@ function mapRow(row: AuditLogRow): AuditLog {
     tenantId: row.tenant_id,
     actorId: row.actor_id,
     action: row.action,
-    entityType: row.entity_type ?? undefined,
-    entityId: row.entity_id ?? undefined,
-    amount: row.amount ?? undefined,
-    metadata: row.metadata ?? undefined,
+    ...(row.entity_type != null && { entityType: row.entity_type }),
+    ...(row.entity_id != null && { entityId: row.entity_id }),
+    ...(row.amount != null && { amount: row.amount }),
+    ...(row.metadata != null && { metadata: row.metadata }),
     isAnomalous: row.is_anomalous,
     createdAt: row.created_at,
   };

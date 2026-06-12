@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
 import { getStockBatchById, updateStockBatch, deleteStockBatch } from '@/lib/stock/queries';
+import { createServerClient } from '@/lib/supabase/server';
 import type { StockBatch } from '@/types/stock';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -21,8 +21,10 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
     return NextResponse.json({ error: 'Parameter tenantId wajib diisi' }, { status: 400 });
   }
 
+  const { id } = await params;
+
   try {
-    const batch = await getStockBatchById(tenantId, params.id);
+    const batch = await getStockBatchById(tenantId, id);
     if (!batch) {
       return NextResponse.json({ error: 'Batch tidak ditemukan' }, { status: 404 });
     }
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -53,9 +55,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
   }
 
   const { tenantId, ...updates } = body as { tenantId: string } & Partial<StockBatch>;
+  const { id } = await params;
 
   try {
-    const updated = await updateStockBatch(tenantId, params.id, updates);
+    const updated = await updateStockBatch(tenantId, id, updates);
     return NextResponse.json({ data: updated }, { status: 200 });
   } catch (error) {
     console.error('[api/stock/[id]] Gagal memperbarui batch:', error);
@@ -64,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -76,8 +79,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams): Pro
     return NextResponse.json({ error: 'Parameter tenantId wajib diisi' }, { status: 400 });
   }
 
+  const { id } = await params;
+
   try {
-    await deleteStockBatch(tenantId, params.id);
+    await deleteStockBatch(tenantId, id);
     return NextResponse.json({ data: null }, { status: 200 });
   } catch (error) {
     console.error('[api/stock/[id]] Gagal menghapus batch:', error);

@@ -16,7 +16,7 @@ interface LoanApplicationRow {
 export async function createLoanApplication(
   data: Omit<LoanApplication, 'id' | 'createdAt' | 'status'>,
 ): Promise<LoanApplication> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: inserted, error } = await supabase
     .from('loan_applications')
@@ -40,7 +40,7 @@ export async function createLoanApplication(
 }
 
 export async function getLoanApplications(tenantId: string): Promise<LoanApplication[]> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('loan_applications')
@@ -59,7 +59,7 @@ export async function getLoanApplications(tenantId: string): Promise<LoanApplica
 export async function getLoanApplicationById(
   applicationId: string,
 ): Promise<LoanApplication | null> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('loan_applications')
@@ -80,7 +80,7 @@ export async function updateApplicationStatus(
   status: ApplicationStatus,
   reviewerId: string,
 ): Promise<LoanApplication> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('loan_applications')
@@ -110,10 +110,10 @@ function mapRow(row: LoanApplicationRow): LoanApplication {
     applicantId: row.applicant_id,
     targetTenantId: row.target_tenant_id,
     amount: Number(row.amount),
-    purpose: row.purpose ?? undefined,
+    ...(row.purpose != null && { purpose: row.purpose }),
     status: row.status,
-    creditScore: row.credit_score ?? undefined,
-    crossTenantData: row.cross_tenant_data ?? undefined,
+    ...(row.credit_score != null && { creditScore: row.credit_score }),
+    ...(row.cross_tenant_data != null && { crossTenantData: row.cross_tenant_data }),
     createdAt: row.created_at,
   };
 }

@@ -14,7 +14,7 @@ interface JointProcurementRow {
 export async function createJointOrder(
   data: Omit<JointProcurement, 'id' | 'createdAt' | 'status'>,
 ): Promise<JointProcurement> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: inserted, error } = await supabase
     .from('joint_procurements')
@@ -36,7 +36,7 @@ export async function createJointOrder(
 }
 
 export async function getJointOrders(tenantId: string): Promise<JointProcurement[]> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const participatingIds = await getParticipatingProcurementIds(tenantId);
   const filter =
@@ -59,7 +59,7 @@ export async function getJointOrders(tenantId: string): Promise<JointProcurement
 }
 
 export async function confirmJointOrder(orderId: string): Promise<JointProcurement> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('joint_procurements')
@@ -80,7 +80,7 @@ export async function confirmJointOrder(orderId: string): Promise<JointProcureme
 }
 
 async function getParticipatingProcurementIds(tenantId: string): Promise<string[]> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('procurement_allocations')
@@ -100,7 +100,7 @@ function mapRow(row: JointProcurementRow): JointProcurement {
     id: row.id,
     commodity: row.commodity,
     totalQuantity: Number(row.total_quantity),
-    unitPrice: row.unit_price ?? undefined,
+    ...(row.unit_price != null && { unitPrice: Number(row.unit_price) }),
     status: row.status,
     initiatedBy: row.initiated_by,
     createdAt: row.created_at,

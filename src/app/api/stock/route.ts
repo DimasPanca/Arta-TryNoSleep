@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
-import { getStockBatches, createStockBatch } from '@/lib/stock/queries';
 import { processBatchReceival } from '@/lib/stock/batch';
-import type { BatchStatus, QualityGrade } from '@/types/stock';
+import { getStockBatches, createStockBatch } from '@/lib/stock/queries';
+import { createServerClient } from '@/lib/supabase/server';
 import type { ScanResult } from '@/types/scan';
+import type { BatchStatus, QualityGrade } from '@/types/stock';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -58,7 +58,7 @@ function isValidCreateBody(body: unknown): body is CreateStockBody {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           storageType: body.storageType,
           status:      'available',
           operatorId:  body.operatorId,
-          farmerId:    body.farmerId,
+          ...(body.farmerId !== undefined && { farmerId: body.farmerId }),
         },
         body.scanResult,
       );

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
 import { detectAnomalies } from '@/lib/audit/detector';
 import { notifyPengurus } from '@/lib/audit/notifications';
+import { createServerClient } from '@/lib/supabase/server';
 
 interface AnomalyCheckBody {
   tenantId: string;
@@ -18,7 +18,7 @@ function isValidBody(body: unknown): body is AnomalyCheckBody {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {

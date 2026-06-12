@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
-import { createJointOrder, getJointOrders } from '@/lib/procurement/joint-order';
 import { calculateAllocation, createAllocations } from '@/lib/procurement/allocation';
+import { createJointOrder, getJointOrders } from '@/lib/procurement/joint-order';
+import { createServerClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -46,7 +46,7 @@ function isValidBody(body: unknown): body is CreateProcurementBody {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const order = await createJointOrder({
       commodity:     body.commodity,
       totalQuantity: body.totalQuantity,
-      unitPrice:     body.unitPrice,
+      ...(body.unitPrice !== undefined && { unitPrice: body.unitPrice }),
       initiatedBy:   body.initiatedBy,
     });
 

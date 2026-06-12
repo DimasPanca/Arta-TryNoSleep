@@ -36,7 +36,7 @@ export const COLD_STORAGE_ELIGIBLE_COMMODITIES = [
 
 export function getStorageDurationDays(commodity: string, storageType: StorageType): number {
   const durations = STORAGE_DURATION_DAYS[storageType];
-  return durations[commodity.toLowerCase()] ?? durations['default'];
+  return durations[commodity.toLowerCase()] ?? durations['default'] ?? 7;
 }
 
 export function isColdStorageEligible(commodity: string): boolean {

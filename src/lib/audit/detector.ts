@@ -71,8 +71,11 @@ function detectUnusualVoidSequence(actorId: string, logs: AuditLog[]): AnomalyPa
   }
 
   for (let i = 0; i + 2 < voids.length; i += 1) {
-    const windowStart = new Date(voids[i].createdAt).getTime();
-    const windowEnd = new Date(voids[i + 2].createdAt).getTime();
+    const first = voids[i];
+    const third = voids[i + 2];
+    if (!first || !third) continue;
+    const windowStart = new Date(first.createdAt).getTime();
+    const windowEnd = new Date(third.createdAt).getTime();
     if (windowEnd - windowStart <= VOID_SEQUENCE_WINDOW_MS) {
       return buildPattern(actorId, 'unusual_void_sequence', voids, 'medium');
     }

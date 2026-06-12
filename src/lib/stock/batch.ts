@@ -26,7 +26,7 @@ export async function processBatchReceival(
     quantityKg: data.quantityKg,
     storageType: data.storageType,
     status: data.status,
-    expiresAt: data.expiresAt,
+    ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt }),
     grade: scanResult.grade,
     qualityScore: scanResult.qualityScore,
   });
@@ -41,7 +41,7 @@ export async function processBatchReceival(
     qualityScore: scanResult.qualityScore,
     receivedAt: batch.receivedAt,
     operatorId: data.operatorId,
-    farmerId: data.farmerId,
+    ...(data.farmerId !== undefined && { farmerId: data.farmerId }),
   })
     .then((tx) => updateStockBatch(tenantId, batch.id, { blockchainTx: tx.txId }))
     .catch((error) => {

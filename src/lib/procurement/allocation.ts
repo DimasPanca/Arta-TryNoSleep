@@ -28,7 +28,7 @@ export async function createAllocations(allocations: ProcurementAllocation[]): P
     return;
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const rows = allocations.map((allocation) => ({
     id: allocation.id,
@@ -48,7 +48,7 @@ export async function createAllocations(allocations: ProcurementAllocation[]): P
 }
 
 async function getOrderQuantity(orderId: string): Promise<number> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('joint_procurements')

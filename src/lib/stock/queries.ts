@@ -19,7 +19,7 @@ export async function getStockBatches(
   tenantId: string,
   filters?: { status?: BatchStatus; grade?: QualityGrade },
 ): Promise<StockBatch[]> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   let query = supabase
     .from('stock_batches')
@@ -47,7 +47,7 @@ export async function getStockBatchById(
   tenantId: string,
   batchId: string,
 ): Promise<StockBatch | null> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('stock_batches')
@@ -68,7 +68,7 @@ export async function createStockBatch(
   tenantId: string,
   data: Omit<StockBatch, 'id' | 'tenantId' | 'receivedAt'>,
 ): Promise<StockBatch> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: inserted, error } = await supabase
     .from('stock_batches')
@@ -89,7 +89,7 @@ export async function updateStockBatch(
   batchId: string,
   updates: Partial<StockBatch>,
 ): Promise<StockBatch> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('stock_batches')
@@ -111,7 +111,7 @@ export async function updateStockBatch(
 }
 
 export async function deleteStockBatch(tenantId: string, batchId: string): Promise<void> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { error } = await supabase
     .from('stock_batches')
@@ -135,13 +135,13 @@ function mapRow(row: StockBatchRow): StockBatch {
     tenantId: row.tenant_id,
     commodity: row.commodity,
     quantityKg: Number(row.quantity_kg),
-    grade: row.grade ?? undefined,
-    qualityScore: row.quality_score ?? undefined,
+    ...(row.grade != null && { grade: row.grade }),
+    ...(row.quality_score != null && { qualityScore: row.quality_score }),
     storageType: row.storage_type,
     status: row.status,
     receivedAt: row.received_at,
-    expiresAt: row.expires_at ?? undefined,
-    blockchainTx: row.blockchain_tx ?? undefined,
+    ...(row.expires_at != null && { expiresAt: row.expires_at }),
+    ...(row.blockchain_tx != null && { blockchainTx: row.blockchain_tx }),
   };
 }
 

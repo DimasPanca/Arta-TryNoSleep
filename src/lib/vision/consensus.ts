@@ -33,7 +33,10 @@ function buildConsensus(results: ScanResult[]): ScanResult {
     votes.set(result.grade, (votes.get(result.grade) ?? 0) + 1);
   }
 
-  let majorityGrade = results[0].grade;
+  const first = results[0];
+  if (!first) throw new Error('Tidak ada hasil scan untuk dibuild konsensusnya');
+
+  let majorityGrade = first.grade;
   let maxVotes = 0;
   for (const [grade, count] of votes) {
     if (count > maxVotes) {
@@ -42,7 +45,7 @@ function buildConsensus(results: ScanResult[]): ScanResult {
     }
   }
 
-  const base = results.find((r) => r.grade === majorityGrade) ?? results[0];
+  const base = results.find((r) => r.grade === majorityGrade) ?? first;
   const averageScore = Math.round(
     results.reduce((sum, r) => sum + r.qualityScore, 0) / results.length,
   );

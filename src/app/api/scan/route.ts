@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { createServerClient } from '@/lib/supabase/server';
 import { getCachedResult, generateImageHash } from '@/lib/vision/cache';
 import { scanWithConsensus } from '@/lib/vision/consensus';
 import { analyzeWithGemini } from '@/lib/vision/gemini';
-import { createServerClient } from '@/lib/supabase/server';
 import type { ScanResult } from '@/types/scan';
 
 interface ScanRequestBody {
@@ -24,7 +24,7 @@ function isValidBody(body: unknown): body is ScanRequestBody {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {

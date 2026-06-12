@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { submitLoanApplication } from '@/lib/blockchain/record';
 import { createLoanApplication, getLoanApplications } from '@/lib/finance/applications';
 import { getCrossTenantCreditScore } from '@/lib/finance/credit';
 import { generateLoanRecommendation } from '@/lib/finance/recommendations';
-import { submitLoanApplication } from '@/lib/blockchain/record';
+import { createServerClient } from '@/lib/supabase/server';
 
 interface CreateApplicationBody {
   targetTenantId: string;
@@ -22,7 +22,7 @@ function isValidBody(body: unknown): body is CreateApplicationBody {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       applicantId:     user.id,
       targetTenantId:  body.targetTenantId,
       amount:          body.amount,
-      purpose:         body.purpose,
+      ...(body.purpose !== undefined && { purpose: body.purpose }),
       creditScore:     creditResult.score,
       crossTenantData: creditResult.history,
     });

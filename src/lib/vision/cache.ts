@@ -8,7 +8,7 @@ export function generateImageHash(base64Image: string): string {
 }
 
 export async function getCachedResult(hash: string): Promise<ScanResult | null> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('scan_records')

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@/lib/supabase/server';
 import { recordStockEvent } from '@/lib/blockchain/record';
+import { createServerClient } from '@/lib/supabase/server';
 import type { BlockchainAction, BlockchainStockRecord } from '@/types/blockchain';
 
 const VALID_ACTIONS: ReadonlySet<string> = new Set([
@@ -26,7 +26,7 @@ function isValidBody(body: unknown): body is RecordBody {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {

@@ -1,4 +1,6 @@
-export default function HomePage(): JSX.Element {
+import type React from 'react';
+
+export default function HomePage(): React.JSX.Element {
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--color-surface-base)]">
       <div className="text-center space-y-4 px-4">
