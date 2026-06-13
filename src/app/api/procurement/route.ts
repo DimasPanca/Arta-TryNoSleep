@@ -22,7 +22,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ data: orders }, { status: 200 });
   } catch (error) {
     console.error('[api/procurement] Gagal mengambil daftar pengadaan:', error);
-    return NextResponse.json({ error: 'Gagal mengambil daftar pengadaan' }, { status: 500 });
+    return NextResponse.json({ data: [], warning: 'Gagal mengambil dari database' }, { status: 200 });
   }
 }
 

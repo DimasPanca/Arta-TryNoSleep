@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { recordBatchReceived } from '@/lib/blockchain/record';
+import { predictShelfLife } from '@/lib/stock/shelf-life';
 import { createServerClient } from '@/lib/supabase/server';
 import type { ScanResult } from '@/types/scan';
-import type { QualityGrade } from '@/types/stock';
+import type { StorageType } from '@/types/stock';
 
 export const runtime = 'nodejs';
 
@@ -12,9 +14,6 @@ const SURFACE = ['clean', 'minor_blemish', 'moderate_damage', 'severe_damage'];
 const SIZES = ['small', 'medium', 'large'];
 const CONF = ['high', 'medium', 'low'];
 const STORAGE = ['ambient', 'cold'];
-
-/** Perkiraan umur simpan (hari) berdasarkan grade — untuk expires_at batch baru. */
-const SHELF_LIFE_DAYS: Record<QualityGrade, number> = { A: 7, B: 5, C: 3, D: 1, F: 0 };
 
 function isScanResult(value: unknown): value is ScanResult {
   if (typeof value !== 'object' || value === null) return false;
@@ -76,17 +75,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const commodity =
     typeof b.commodity === 'string' && b.commodity.trim().length > 0 ? b.commodity.trim() : 'Tomat';
   const imageHash = typeof b.imageHash === 'string' ? b.imageHash : null;
-  const storageType = typeof b.storageType === 'string' && STORAGE.includes(b.storageType)
-    ? b.storageType
+  const storageType: StorageType = typeof b.storageType === 'string' && STORAGE.includes(b.storageType)
+    ? (b.storageType as StorageType)
     : 'ambient';
   const quantityKg = typeof b.quantityKg === 'number' && Number.isFinite(b.quantityKg) ? b.quantityKg : 0;
   const createBatch = b.createBatch === true && quantityKg > 0;
 
   let batchId: string | null = null;
+  let blockchainTx: string | null = null;
 
   if (createBatch) {
-    const days = SHELF_LIFE_DAYS[result.grade];
-    const expiresAt = days > 0 ? new Date(Date.now() + days * 86_400_000).toISOString() : null;
+    const receivedAt = new Date().toISOString();
+    // Prediksi masa simpan dari kondisi nyata hasil scan → expires_at lebih akurat.
+    const shelf = predictShelfLife({
+      commodity,
+      grade: result.grade,
+      qualityScore: result.qualityScore,
+      storageType,
+      receivedAt,
+      colorRipeness: result.colorRipeness,
+      surfaceCondition: result.surfaceCondition,
+    });
+    const expiresAt = shelf.predictedShelfLifeDays > 0 ? shelf.spoilDate : null;
 
     const { data: batch, error: batchError } = await supabase
       .from('stock_batches')
@@ -98,6 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         quality_score: result.qualityScore,
         storage_type: storageType,
         status: 'available',
+        received_at: receivedAt,
         expires_at: expiresAt,
         created_by: user.id,
       })
@@ -109,6 +120,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ok: false, error: 'Gagal membuat batch stok.' }, { status: 500 });
     }
     batchId = (batch as { id: string }).id;
+
+    // Catat batch ke Hyperledger Fabric (best-effort). Supabase tetap sumber
+    // utama bila Fabric offline — txId disimpan agar baris terverifikasi on-chain.
+    try {
+      const tx = await recordBatchReceived({
+        batchId,
+        tenantId,
+        commodity,
+        quantityKg,
+        grade: result.grade,
+        qualityScore: result.qualityScore,
+        receivedAt,
+        operatorId: user.id,
+      });
+      blockchainTx = tx.txId;
+      await supabase.from('stock_batches').update({ blockchain_tx: tx.txId }).eq('id', batchId);
+    } catch (fabricErr) {
+      console.error('[api/scan/save] Fabric recordBatchReceived gagal (fallback Supabase):', fabricErr);
+    }
   }
 
   const { error: scanError } = await supabase.from('scan_records').insert({
@@ -132,5 +162,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'Gagal menyimpan hasil scan.' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, batchId });
+  return NextResponse.json({ ok: true, batchId, blockchainTx });
 }

@@ -2,18 +2,17 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 
 import {
   FormAlert,
-  OtpInput,
   PasswordField,
   PhoneField,
   SubmitButton,
   TextField,
 } from '@/components/auth/fields';
 import { createClient } from '@/lib/supabase/client';
-import { formatPhoneDisplay, isValidLocalPhone, toE164 } from '@/lib/utils/phone';
+import { isValidLocalPhone, phoneToAuthEmail, toE164 } from '@/lib/utils/phone';
 import { roleLabel } from '@/lib/utils/roles';
 
 export interface InviteContext {
@@ -22,178 +21,88 @@ export interface InviteContext {
   tenantName: string;
 }
 
-interface RegisterFormProps {
-  invite?: InviteContext;
-  inviteError?: string;
-}
-
-interface TenantOption {
+export interface TenantOption {
   id: string;
   name: string;
 }
 
-type Step = 'phone' | 'otp' | 'details' | 'done';
-const RESEND_SECONDS = 60;
+interface RegisterFormProps {
+  invite?: InviteContext;
+  inviteError?: string;
+  tenants?: TenantOption[];
+}
 
-export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactNode {
+type Step = 'form' | 'done';
+
+export function RegisterForm({ invite, inviteError, tenants = [] }: RegisterFormProps): ReactNode {
   const router = useRouter();
   const supabase = createClient();
   const isInvite = Boolean(invite);
 
-  const [step, setStep] = useState<Step>('phone');
+  const [step, setStep] = useState<Step>('form');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [tenantId, setTenantId] = useState('');
-  const [tenants, setTenants] = useState<TenantOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
 
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = setInterval(() => setCooldown((c) => c - 1), 1000);
-    return () => clearInterval(timer);
-  }, [cooldown]);
-
-  // Muat daftar koperasi untuk self-register saat masuk tahap detail
-  useEffect(() => {
-    if (step !== 'details' || isInvite) return;
-    let active = true;
-    void (async () => {
-      const { data } = await supabase
-        .from('tenants')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
-      if (active && data) setTenants(data as TenantOption[]);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [step, isInvite, supabase]);
-
-  async function sendOtp(): Promise<void> {
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      phone: toE164(phone),
-      options: { channel: 'whatsapp' },
-    });
-    if (otpError) throw otpError;
-  }
-
-  async function handleSendCode(e: FormEvent): Promise<void> {
+  async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     setError(null);
-    if (!isValidLocalPhone(phone)) {
-      setError('Nomor WhatsApp tidak valid. Masukkan 9–13 digit.');
-      return;
-    }
-    setLoading(true);
-    try {
-      await sendOtp();
-      setStep('otp');
-      setCooldown(RESEND_SECONDS);
-    } catch {
-      setError('Gagal mengirim kode. Periksa nomor Anda dan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  async function handleVerify(e: FormEvent): Promise<void> {
-    e.preventDefault();
-    setError(null);
-    if (otp.length !== 6) {
-      setError('Masukkan 6 digit kode verifikasi.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        phone: toE164(phone),
-        token: otp,
-        type: 'sms',
-      });
-      if (verifyError) throw verifyError;
-      setStep('details');
-    } catch {
-      setError('Kode salah atau kedaluwarsa. Coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleComplete(e: FormEvent): Promise<void> {
-    e.preventDefault();
-    setError(null);
     if (fullName.trim().length < 2) {
       setError('Masukkan nama lengkap Anda.');
+      return;
+    }
+    if (!isValidLocalPhone(phone)) {
+      setError('Nomor HP tidak valid. Masukkan 9–13 digit.');
       return;
     }
     if (password.length < 6) {
       setError('Kata sandi minimal 6 karakter.');
       return;
     }
+    if (!isInvite && !tenantId) {
+      setError('Pilih koperasi yang ingin Anda ikuti.');
+      return;
+    }
 
     setLoading(true);
     try {
-      // Set kata sandi agar bisa login dengan password nantinya
-      const { error: pwError } = await supabase.auth.updateUser({ password });
-      if (pwError) throw pwError;
-
-      if (isInvite && invite) {
-        const res = await fetch('/api/auth/accept-invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: invite.token, fullName: fullName.trim() }),
-        });
-        if (!res.ok) {
-          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(payload?.error ?? 'Gagal menyelesaikan pendaftaran.');
-        }
-        router.replace('/dashboard');
-        router.refresh();
-        return;
-      }
-
-      // Self-register anggota → status pending
-      if (!tenantId) {
-        setError('Pilih koperasi yang ingin Anda ikuti.');
-        setLoading(false);
-        return;
-      }
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Sesi tidak valid. Verifikasi ulang nomor Anda.');
-
-      const { error: insertError } = await supabase.from('members').insert({
-        user_id: user.id,
-        tenant_id: tenantId,
-        role: 'anggota',
-        status: 'pending',
-        full_name: fullName.trim(),
-        phone: user.phone ?? toE164(phone),
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          fullName: fullName.trim(),
+          password,
+          tenantId: isInvite ? undefined : tenantId,
+          inviteToken: isInvite ? invite?.token : undefined,
+        }),
       });
-      if (insertError) throw insertError;
 
-      setStep('done');
+      const payload = (await res.json().catch(() => null)) as { ok?: boolean; redirect?: string | null; error?: string } | null;
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? 'Terjadi kesalahan. Coba lagi.');
+      }
+
+      // Langsung masuk setelah akun dibuat
+      const email = phoneToAuthEmail(toE164(phone));
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
+
+      if (payload?.redirect) {
+        router.replace(payload.redirect);
+        router.refresh();
+      } else {
+        setStep('done');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan. Coba lagi.');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleResend(): Promise<void> {
-    if (cooldown > 0) return;
-    setError(null);
-    try {
-      await sendOtp();
-      setCooldown(RESEND_SECONDS);
-    } catch {
-      setError('Gagal mengirim ulang kode.');
     }
   }
 
@@ -222,7 +131,7 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
     );
   }
 
-  /* ── Sukses (self-register pending) ───────────────────────── */
+  /* ── Sukses: menunggu persetujuan ─────────────────────────── */
   if (step === 'done') {
     return (
       <div className="text-center">
@@ -235,8 +144,7 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
           Pendaftaran terkirim
         </h1>
         <p className="mx-auto mt-2 max-w-xs text-[15px] text-[var(--color-text-secondary)]">
-          Akun Anda menunggu persetujuan pengurus koperasi. Anda akan dapat masuk
-          setelah disetujui.
+          Akun Anda menunggu persetujuan pengurus koperasi. Anda akan dapat masuk setelah disetujui.
         </p>
         <Link
           href="/login"
@@ -248,108 +156,24 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
     );
   }
 
-  /* ── Tahap: nomor HP ──────────────────────────────────────── */
-  if (step === 'phone') {
-    return (
-      <div>
-        {isInvite && invite && <InviteBadge role={invite.role} tenantName={invite.tenantName} />}
-        <header className="mb-7">
-          <h1 className="font-[var(--font-display)] text-[2rem] leading-tight tracking-tight text-[var(--color-text-primary)]">
-            {isInvite ? 'Aktifkan akun Anda' : 'Buat akun anggota'}
-          </h1>
-          <p className="mt-1.5 text-[15px] text-[var(--color-text-secondary)]">
-            {isInvite
-              ? 'Verifikasi nomor WhatsApp untuk mengaktifkan undangan.'
-              : 'Daftar dengan nomor WhatsApp untuk bergabung dengan koperasi.'}
-          </p>
-        </header>
-
-        <form onSubmit={handleSendCode} className="space-y-4" noValidate>
-          {error && <FormAlert tone="error">{error}</FormAlert>}
-          <PhoneField value={phone} onChange={setPhone} disabled={loading} />
-          <SubmitButton loading={loading}>Kirim Kode Verifikasi</SubmitButton>
-        </form>
-
-        {!isInvite && (
-          <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
-            Sudah punya akun?{' '}
-            <Link
-              href="/login"
-              className="font-semibold text-[var(--color-brand-700)] underline-offset-4 transition-colors hover:text-[var(--color-brand-800)] hover:underline"
-            >
-              Masuk di sini
-            </Link>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  /* ── Tahap: OTP ───────────────────────────────────────────── */
-  if (step === 'otp') {
-    return (
-      <div>
-        <header className="mb-7">
-          <h1 className="font-[var(--font-display)] text-[2rem] leading-tight tracking-tight text-[var(--color-text-primary)]">
-            Masukkan kode
-          </h1>
-          <p className="mt-1.5 text-[15px] text-[var(--color-text-secondary)]">
-            Kami mengirim 6 digit kode ke{' '}
-            <span className="font-semibold text-[var(--color-text-primary)]">
-              {formatPhoneDisplay(phone)}
-            </span>
-            .
-          </p>
-        </header>
-
-        <form onSubmit={handleVerify} className="space-y-5" noValidate>
-          {error && <FormAlert tone="error">{error}</FormAlert>}
-          <OtpInput value={otp} onChange={setOtp} disabled={loading} autoFocus />
-          <SubmitButton loading={loading} disabled={otp.length !== 6}>
-            Verifikasi
-          </SubmitButton>
-        </form>
-
-        <div className="mt-6 flex items-center justify-between text-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setStep('phone');
-              setOtp('');
-              setError(null);
-            }}
-            className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] cursor-pointer"
-          >
-            ← Ganti nomor
-          </button>
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={cooldown > 0}
-            className="font-semibold text-[var(--color-brand-700)] transition-colors hover:text-[var(--color-brand-800)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed cursor-pointer"
-          >
-            {cooldown > 0 ? `Kirim ulang (${cooldown}s)` : 'Kirim ulang kode'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Tahap: detail akun ───────────────────────────────────── */
+  /* ── Form pendaftaran ─────────────────────────────────────── */
   return (
     <div>
       {isInvite && invite && <InviteBadge role={invite.role} tenantName={invite.tenantName} />}
       <header className="mb-7">
         <h1 className="font-[var(--font-display)] text-[2rem] leading-tight tracking-tight text-[var(--color-text-primary)]">
-          Lengkapi data Anda
+          {isInvite ? 'Aktifkan akun Anda' : 'Buat akun anggota'}
         </h1>
         <p className="mt-1.5 text-[15px] text-[var(--color-text-secondary)]">
-          Hampir selesai. Lengkapi data berikut untuk menyelesaikan pendaftaran.
+          {isInvite
+            ? 'Lengkapi data berikut untuk mengaktifkan undangan.'
+            : 'Isi data di bawah untuk mendaftar sebagai anggota koperasi.'}
         </p>
       </header>
 
-      <form onSubmit={handleComplete} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && <FormAlert tone="error">{error}</FormAlert>}
+
         <TextField
           id="fullName"
           label="Nama lengkap"
@@ -360,6 +184,8 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
           disabled={loading}
           autoFocus
         />
+
+        <PhoneField value={phone} onChange={setPhone} disabled={loading} />
 
         <PasswordField
           label="Buat kata sandi"
@@ -387,7 +213,7 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
                 className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] px-4 py-3 pr-10 text-[15px] text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-brand-400)] focus:ring-4 focus:ring-[var(--color-brand-100)] disabled:opacity-60 cursor-pointer"
               >
                 <option value="" disabled>
-                  {tenants.length === 0 ? 'Memuat daftar koperasi…' : 'Pilih koperasi…'}
+                  Pilih koperasi…
                 </option>
                 {tenants.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -410,10 +236,24 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
           </div>
         )}
 
-        <SubmitButton loading={loading}>
-          {isInvite ? 'Selesaikan & Masuk' : 'Kirim Pendaftaran'}
-        </SubmitButton>
+        <div className="pt-1">
+          <SubmitButton loading={loading}>
+            {isInvite ? 'Aktifkan & Masuk' : 'Kirim Pendaftaran'}
+          </SubmitButton>
+        </div>
       </form>
+
+      {!isInvite && (
+        <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
+          Sudah punya akun?{' '}
+          <Link
+            href="/login"
+            className="font-semibold text-[var(--color-brand-700)] underline-offset-4 transition-colors hover:text-[var(--color-brand-800)] hover:underline"
+          >
+            Masuk di sini
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

@@ -27,17 +27,17 @@ export default async function MembersPage(): Promise<React.JSX.Element> {
     const [membersRes, pendingRes, invitesRes] = await Promise.all([
       supabase
         .from('members')
-        .select('id, full_name, role, status, phone, joined_at')
+        .select('id, full_name, role, status, phone, created_at')
         .eq('tenant_id', tenantId)
         .eq('status', 'active')
-        .order('joined_at', { ascending: true }),
+        .order('created_at', { ascending: true }),
 
       supabase
         .from('members')
-        .select('id, full_name, role, status, phone, joined_at')
+        .select('id, full_name, role, status, phone, created_at')
         .eq('tenant_id', tenantId)
         .eq('status', 'pending')
-        .order('joined_at', { ascending: false }),
+        .order('created_at', { ascending: false }),
 
       supabase
         .from('member_invites')
@@ -52,7 +52,7 @@ export default async function MembersPage(): Promise<React.JSX.Element> {
       role: string;
       status: string;
       phone: string | null;
-      joined_at: string;
+      created_at: string;
     };
 
     type InviteRow = {
@@ -71,7 +71,7 @@ export default async function MembersPage(): Promise<React.JSX.Element> {
       role: r.role as TenantRole,
       status: 'active' as const,
       phone: r.phone ?? '',
-      joinedAt: r.joined_at,
+      joinedAt: r.created_at,
     }));
 
     pending = ((pendingRes.data ?? []) as MemberRow[]).map((r) => ({
@@ -80,8 +80,8 @@ export default async function MembersPage(): Promise<React.JSX.Element> {
       role: r.role as TenantRole,
       status: 'pending' as const,
       phone: r.phone ?? '',
-      joinedAt: r.joined_at,
-      appliedAt: r.joined_at,
+      joinedAt: r.created_at,
+      appliedAt: r.created_at,
     }));
 
     invites = ((invitesRes.data ?? []) as InviteRow[]).map((r): InviteRecord => {

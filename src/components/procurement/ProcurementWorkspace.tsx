@@ -82,7 +82,7 @@ export function ProcurementWorkspace({
         const res = await fetch('/api/procurement/anchor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ procurementId: order.id }),
+          body: JSON.stringify({ procurementId: order.id, order }),
         });
         const json = (await res.json()) as { ok?: boolean; txId?: string; error?: string };
         if (json.ok && json.txId) {

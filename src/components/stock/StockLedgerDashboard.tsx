@@ -3,8 +3,21 @@
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { StockLedgerEvent, StockLedgerRow } from '@/lib/stock/ledger';
+import {
+  needsAttention,
+  predictShelfLife,
+  URGENCY_META,
+  URGENCY_SEVERITY,
+  type ShelfLifeResult,
+  type ShelfLifeUrgency,
+} from '@/lib/stock/shelf-life';
 import type { BlockchainAction } from '@/types/blockchain';
 import type { QualityGrade } from '@/types/stock';
+
+interface ShelfLifeRow {
+  row: StockLedgerRow;
+  shelf: ShelfLifeResult;
+}
 
 type GradeFilter = 'all' | QualityGrade;
 type ActionFilter = 'all' | BlockchainAction;
@@ -140,6 +153,21 @@ export function StockLedgerDashboard({
     [rows, query, grade, action, activeOnly, minScore, sortKey, sortDirection],
   );
 
+  const nowMs = useMemo(() => {
+    const t = new Date(generatedAt).getTime();
+    return Number.isFinite(t) ? t : Date.now();
+  }, [generatedAt]);
+
+  // Prediksi masa simpan untuk batch yang masih aktif (berdasarkan data scan nyata).
+  const shelfLifeRows = useMemo(
+    () => buildShelfLifeRows(filteredRows, nowMs),
+    [filteredRows, nowMs],
+  );
+  const attentionRows = useMemo(
+    () => shelfLifeRows.filter((s) => needsAttention(s.shelf.urgency)),
+    [shelfLifeRows],
+  );
+
   const events = useMemo(() => buildDecoratedEvents(filteredRows), [filteredRows]);
   const summary = useMemo(() => summarizeRows(filteredRows), [filteredRows]);
   const gradeBuckets = useMemo(() => summarizeGrades(filteredRows), [filteredRows]);
@@ -209,6 +237,8 @@ export function StockLedgerDashboard({
 
       {error && <ErrorBanner message={error} />}
 
+      {attentionRows.length > 0 && <ShelfLifeAlert items={attentionRows} />}
+
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Batch tertelusur"
@@ -259,6 +289,15 @@ export function StockLedgerDashboard({
       ) : (
         <>
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <Panel title="Prioritas penjualan & masa simpan" className="xl:col-span-7">
+              <SellPriorityList items={shelfLifeRows} />
+            </Panel>
+            <Panel title="Sebaran masa simpan" className="xl:col-span-5">
+              <ShelfLifeBreakdown items={shelfLifeRows} />
+            </Panel>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
             <Panel title="Distribusi grade" className="xl:col-span-4">
               <GradeLedgerChart buckets={gradeBuckets} />
             </Panel>
@@ -279,7 +318,7 @@ export function StockLedgerDashboard({
             </Panel>
           </section>
 
-          <LedgerTable rows={filteredRows} />
+          <LedgerTable rows={filteredRows} nowMs={nowMs} />
         </>
       )}
     </div>
@@ -781,7 +820,7 @@ function RecentEventList({ events }: { events: DecoratedEvent[] }): ReactNode {
   );
 }
 
-function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
+function LedgerTable({ rows, nowMs }: { rows: StockLedgerRow[]; nowMs: number }): ReactNode {
   return (
     <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-card)]">
       <div className="flex flex-col gap-1 border-b border-[var(--color-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -791,7 +830,7 @@ function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
         </p>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[980px] w-full border-collapse text-left">
+        <table className="min-w-[1100px] w-full border-collapse text-left">
           <thead className="sticky top-0 bg-[var(--color-surface)]">
             <tr className="text-xs font-semibold text-[var(--color-text-muted)]">
               <th className="px-4 py-3">Batch</th>
@@ -799,6 +838,7 @@ function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
               <th className="px-4 py-3 text-right">Berat</th>
               <th className="px-4 py-3">Grade</th>
               <th className="px-4 py-3 text-right">Skor</th>
+              <th className="px-4 py-3">Masa simpan</th>
               <th className="px-4 py-3">Event terakhir</th>
               <th className="px-4 py-3">Waktu</th>
               <th className="px-4 py-3">TxId</th>
@@ -808,12 +848,26 @@ function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+                <td colSpan={10} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
                   Tidak ada batch yang sesuai filter.
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              rows.map((row) => {
+                const shelf = row.active
+                  ? predictShelfLife({
+                      commodity: row.commodity,
+                      grade: row.grade,
+                      qualityScore: row.qualityScore,
+                      storageType: row.storageType,
+                      receivedAt: row.firstSeenAt,
+                      colorRipeness: row.colorRipeness,
+                      surfaceCondition: row.surfaceCondition,
+                      storedExpiresAt: row.expiresAt,
+                      now: nowMs,
+                    })
+                  : null;
+                return (
                 <tr key={row.batchId} className="border-t border-[var(--color-border)] text-sm transition-colors hover:bg-[var(--color-surface)]">
                   <td className="px-4 py-3">
                     <span className="font-[var(--font-mono)] text-xs text-[var(--color-text-primary)]">
@@ -843,6 +897,18 @@ function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
                     {integerFormat.format(row.qualityScore)}
                   </td>
                   <td className="px-4 py-3">
+                    {shelf ? (
+                      <div className="flex flex-col gap-1">
+                        <UrgencyBadge urgency={shelf.urgency} />
+                        <span className="text-[11px] text-[var(--color-text-muted)]">
+                          {shelf.daysRemaining <= 0 ? 'lewat masa' : `${shelf.daysRemaining} hari · ${shelf.storage.temp}`}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[var(--color-text-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <span
                       className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)]"
                     >
@@ -862,12 +928,170 @@ function LedgerTable({ rows }: { rows: StockLedgerRow[] }): ReactNode {
                     {row.eventCount}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
     </section>
+  );
+}
+
+function ShelfLifeAlert({ items }: { items: ShelfLifeRow[] }): ReactNode {
+  const expired = items.filter((s) => s.shelf.urgency === 'expired').length;
+  const critical = items.filter((s) => s.shelf.urgency === 'critical').length;
+  const urgent = items.filter((s) => s.shelf.urgency === 'urgent').length;
+  const top = items.slice(0, 4);
+
+  return (
+    <section className="rounded-lg border border-[var(--color-amber-400)]/50 bg-[var(--color-amber-100)] p-4 animate-arta-rise">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-[var(--color-amber-400)] text-white">
+          <BellIcon />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              {items.length} batch perlu segera dijual
+            </p>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              {expired > 0 && `${expired} lewat masa · `}
+              {critical > 0 && `${critical} kritis · `}
+              {urgent > 0 && `${urgent} segera`}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+            Prioritaskan penjualan/olah batch berikut agar tidak busuk di gudang. Operator & ketua sebaiknya menindaklanjuti hari ini.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {top.map((s) => {
+              const meta = URGENCY_META[s.shelf.urgency];
+              return (
+                <span
+                  key={s.row.batchId}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+                  style={{ borderColor: meta.color, color: meta.color, backgroundColor: 'var(--color-surface-card)' }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                  {s.row.commodity} · {formatKg(s.row.quantityKg)} ·{' '}
+                  {s.shelf.daysRemaining <= 0 ? 'lewat' : `${s.shelf.daysRemaining} hari`}
+                </span>
+              );
+            })}
+            {items.length > top.length && (
+              <span className="inline-flex items-center rounded-full bg-[var(--color-surface-card)] px-2.5 py-1 text-xs text-[var(--color-text-muted)]">
+                +{items.length - top.length} lainnya
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SellPriorityList({ items }: { items: ShelfLifeRow[] }): ReactNode {
+  if (items.length === 0) return <EmptyChart label="Tidak ada stok aktif untuk diprioritaskan." />;
+  const shown = items.slice(0, 8);
+
+  return (
+    <div className="space-y-2">
+      {shown.map((s, index) => {
+        const meta = URGENCY_META[s.shelf.urgency];
+        return (
+          <article
+            key={s.row.batchId}
+            className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+          >
+            <span
+              className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-md font-[var(--font-mono)] text-xs font-bold text-white"
+              style={{ backgroundColor: meta.color }}
+            >
+              {index + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{s.row.commodity}</p>
+                <UrgencyBadge urgency={s.shelf.urgency} />
+                {s.shelf.recommendColdStorage && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-brand-50)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-brand-700)]">
+                    <SnowIcon /> Pindahkan ke pendingin
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                {formatKg(s.row.quantityKg)} · Grade {s.row.grade} · {s.shelf.storage.temp}
+              </p>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${s.shelf.freshnessPct}%`, backgroundColor: meta.color }}
+                />
+              </div>
+            </div>
+            <div className="flex-shrink-0 text-right">
+              <p className="font-[var(--font-display)] text-lg leading-none" style={{ color: meta.color }}>
+                {s.shelf.daysRemaining <= 0 ? '0' : s.shelf.daysRemaining}
+              </p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">hari tersisa</p>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function ShelfLifeBreakdown({ items }: { items: ShelfLifeRow[] }): ReactNode {
+  if (items.length === 0) return <EmptyChart label="Belum ada stok aktif untuk dianalisis." />;
+  const order: ShelfLifeUrgency[] = ['fresh', 'monitor', 'urgent', 'critical', 'expired'];
+  const counts = order.map((urgency) => ({
+    urgency,
+    count: items.filter((s) => s.shelf.urgency === urgency).length,
+    weightKg: items.filter((s) => s.shelf.urgency === urgency).reduce((sum, s) => sum + s.row.quantityKg, 0),
+  }));
+  const total = items.length;
+
+  return (
+    <div className="space-y-2.5">
+      {counts.map((c) => {
+        const meta = URGENCY_META[c.urgency];
+        const pct = total > 0 ? (c.count / total) * 100 : 0;
+        return (
+          <div key={c.urgency}>
+            <div className="flex items-center justify-between text-xs">
+              <span className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-primary)]">
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: meta.color }} />
+                {meta.label}
+              </span>
+              <span className="font-[var(--font-mono)] text-[var(--color-text-secondary)]">
+                {c.count} · {formatKg(c.weightKg)}
+              </span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--color-surface)]">
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+            </div>
+          </div>
+        );
+      })}
+      <p className="pt-1 text-[11px] leading-snug text-[var(--color-text-muted)]">
+        Prediksi dari komoditas, grade, kematangan, kondisi permukaan, dan jenis penyimpanan tiap batch.
+      </p>
+    </div>
+  );
+}
+
+function UrgencyBadge({ urgency }: { urgency: ShelfLifeUrgency }): ReactNode {
+  const meta = URGENCY_META[urgency];
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+      style={{ backgroundColor: meta.bg, color: meta.color }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+      {meta.label}
+    </span>
   );
 }
 
@@ -964,6 +1188,30 @@ function buildDecoratedEvents(rows: StockLedgerRow[]): DecoratedEvent[] {
       })),
     )
     .sort((a, b) => toTime(b.timestamp) - toTime(a.timestamp));
+}
+
+function buildShelfLifeRows(rows: StockLedgerRow[], nowMs: number): ShelfLifeRow[] {
+  return rows
+    .filter((row) => row.active)
+    .map((row) => ({
+      row,
+      shelf: predictShelfLife({
+        commodity: row.commodity,
+        grade: row.grade,
+        qualityScore: row.qualityScore,
+        storageType: row.storageType,
+        receivedAt: row.firstSeenAt,
+        colorRipeness: row.colorRipeness,
+        surfaceCondition: row.surfaceCondition,
+        storedExpiresAt: row.expiresAt,
+        now: nowMs,
+      }),
+    }))
+    .sort((a, b) => {
+      const bySeverity = URGENCY_SEVERITY[b.shelf.urgency] - URGENCY_SEVERITY[a.shelf.urgency];
+      if (bySeverity !== 0) return bySeverity;
+      return a.shelf.daysRemaining - b.shelf.daysRemaining;
+    });
 }
 
 function summarizeRows(rows: StockLedgerRow[]): Summary {
@@ -1162,6 +1410,22 @@ function TraceIcon(): ReactNode {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
       <path d="M5 7h7a4 4 0 0 1 0 8H8m11 2h-7a4 4 0 0 1 0-8h4M7 12h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BellIcon(): ReactNode {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
+      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Zm4 11a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SnowIcon(): ReactNode {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" aria-hidden>
+      <path d="M12 3v18M5 7l14 10M19 7 5 17M3 12h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

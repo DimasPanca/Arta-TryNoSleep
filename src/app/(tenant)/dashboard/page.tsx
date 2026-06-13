@@ -7,12 +7,23 @@ import {
   ExpiryList,
   GradeDistribution,
   Panel,
+  ShelfLifeBanner,
   StatCard,
   type Activity,
   type ExpiryItem,
+  type ShelfLifeAttentionItem,
 } from '@/components/dashboard/widgets';
 import { getDashboardIdentity } from '@/lib/auth/identity';
+import {
+  needsAttention,
+  predictShelfLife,
+  URGENCY_META,
+  URGENCY_SEVERITY,
+  type ColorRipeness,
+  type SurfaceCondition,
+} from '@/lib/stock/shelf-life';
 import { createServerClient } from '@/lib/supabase/server';
+import type { QualityGrade, StorageType } from '@/types/stock';
 
 export const metadata: Metadata = {
   title: 'Ringkasan · Arta',
@@ -34,7 +45,16 @@ const ICON_LOAN = (
 );
 
 type GradeRow = { grade: string; count: number };
-type ExpiryRow = { commodity: string; quantity_kg: number; expires_at: string };
+type ActiveBatchRow = {
+  id: string;
+  commodity: string;
+  quantity_kg: number;
+  grade: string;
+  quality_score: number;
+  storage_type: string | null;
+  received_at: string;
+  expires_at: string | null;
+};
 
 export default async function DashboardPage(): Promise<React.JSX.Element> {
   const identity = await getDashboardIdentity();
@@ -47,6 +67,7 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
   let gradeData: GradeRow[] = [];
   let activities: Activity[] = [];
   let expiring: ExpiryItem[] = [];
+  let attention: ShelfLifeAttentionItem[] = [];
   let totalScanned = 0;
 
   if (tenantId) {
@@ -72,16 +93,13 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         .select('grade')
         .eq('tenant_id', tenantId),
 
-      // Batch mendekati kedaluwarsa (3 hari ke depan)
+      // Batch aktif untuk prediksi masa simpan (storage, kematangan, dll)
       supabase
         .from('stock_batches')
-        .select('commodity, quantity_kg, expires_at')
+        .select('id, commodity, quantity_kg, grade, quality_score, storage_type, received_at, expires_at')
         .eq('tenant_id', tenantId)
         .eq('status', 'available')
-        .not('expires_at', 'is', null)
-        .lte('expires_at', new Date(Date.now() + 3 * 86_400_000).toISOString())
-        .order('expires_at', { ascending: true })
-        .limit(10),
+        .limit(200),
 
       // Aktivitas terbaru dari scan_records (join ke stock_batches untuk nama komoditas)
       supabase
@@ -120,14 +138,66 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         .sort((a, b) => a.grade.localeCompare(b.grade));
     }
 
-    // Mendekati kedaluwarsa
-    if (expiryRes.data) {
+    // Prediksi masa simpan dari data nyata tiap batch aktif
+    if (expiryRes.data && expiryRes.data.length > 0) {
+      const batches = expiryRes.data as ActiveBatchRow[];
+      const batchIds = batches.map((b) => b.id);
+
+      // Kondisi scan terbaru per batch (kematangan & permukaan)
+      const scanByBatch = new Map<string, { color_ripeness: string; surface_condition: string }>();
+      const { data: scans } = await supabase
+        .from('scan_records')
+        .select('batch_id, color_ripeness, surface_condition, scanned_at')
+        .in('batch_id', batchIds)
+        .order('scanned_at', { ascending: false });
+      for (const s of (scans ?? []) as Array<{ batch_id: string | null; color_ripeness: string; surface_condition: string }>) {
+        if (s.batch_id && !scanByBatch.has(s.batch_id)) {
+          scanByBatch.set(s.batch_id, { color_ripeness: s.color_ripeness, surface_condition: s.surface_condition });
+        }
+      }
+
       const now = Date.now();
-      expiring = (expiryRes.data as ExpiryRow[]).map((r) => ({
-        commodity: r.commodity,
-        quantityKg: Number(r.quantity_kg),
-        daysLeft: Math.max(0, Math.round((new Date(r.expires_at).getTime() - now) / 86_400_000)),
-      }));
+      const computed = batches.map((b) => {
+        const scan = scanByBatch.get(b.id);
+        const shelf = predictShelfLife({
+          commodity: b.commodity,
+          grade: b.grade as QualityGrade,
+          qualityScore: Number(b.quality_score),
+          storageType: (b.storage_type === 'cold' ? 'cold' : 'ambient') as StorageType,
+          receivedAt: b.received_at,
+          colorRipeness: (scan?.color_ripeness as ColorRipeness | undefined) ?? null,
+          surfaceCondition: (scan?.surface_condition as SurfaceCondition | undefined) ?? null,
+          storedExpiresAt: b.expires_at ?? null,
+          now,
+        });
+        return { commodity: b.commodity, quantityKg: Number(b.quantity_kg), shelf };
+      });
+
+      // Urutkan paling mendesak dulu
+      computed.sort((a, b) => {
+        const bySeverity = URGENCY_SEVERITY[b.shelf.urgency] - URGENCY_SEVERITY[a.shelf.urgency];
+        if (bySeverity !== 0) return bySeverity;
+        return a.shelf.daysRemaining - b.shelf.daysRemaining;
+      });
+
+      expiring = computed
+        .filter((c) => c.shelf.daysRemaining <= 4)
+        .slice(0, 10)
+        .map((c) => ({
+          commodity: c.commodity,
+          quantityKg: c.quantityKg,
+          daysLeft: Math.max(0, c.shelf.daysRemaining),
+        }));
+
+      attention = computed
+        .filter((c) => needsAttention(c.shelf.urgency))
+        .map((c) => ({
+          commodity: c.commodity,
+          quantityKg: c.quantityKg,
+          daysLeft: c.shelf.daysRemaining,
+          urgencyLabel: URGENCY_META[c.shelf.urgency].label,
+          color: URGENCY_META[c.shelf.urgency].color,
+        }));
     }
 
     // Aktivitas terbaru
@@ -155,6 +225,12 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
           Berikut ringkasan operasional {identity.tenantName} hari ini.
         </p>
       </header>
+
+      {attention.length > 0 && (
+        <div className="animate-arta-rise">
+          <ShelfLifeBanner items={attention} />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[

@@ -19,6 +19,15 @@ export function formatPhoneDisplay(local: string): string {
   return `+62 ${groups}`;
 }
 
+/**
+ * Derive a deterministic auth email from an E.164 phone string.
+ * "+6281234567890" → "6281234567890@arta.id"
+ * Used so we can register/login with email+password without phone OTP.
+ */
+export function phoneToAuthEmail(phoneE164: string): string {
+  return `${phoneE164.replace(/\D/g, '')}@arta.id`;
+}
+
 /** Validasi panjang nomor lokal (tanpa kode negara): 9–13 digit. */
 export function isValidLocalPhone(local: string): boolean {
   let digits = local.replace(/\D/g, '');

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { hasPermission } from '@/constants/roles';
 import { recordProcurementEvent } from '@/lib/blockchain/record';
 import { getCooperative } from '@/lib/procurement/cooperatives';
-import { computeMetrics } from '@/lib/procurement/overview';
+import { computeMetrics, type JointProcurementView } from '@/lib/procurement/overview';
 import { SAMPLE_PROCUREMENTS } from '@/lib/procurement/samples';
 import { createServerClient } from '@/lib/supabase/server';
 import type { TenantRole } from '@/types/tenant';
@@ -45,15 +45,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch {
     return NextResponse.json({ ok: false, error: 'Body tidak valid.' }, { status: 400 });
   }
-  const procurementId = (body as { procurementId?: unknown })?.procurementId;
+
+  const typedBody = body as { procurementId?: unknown; order?: JointProcurementView };
+  const procurementId = typedBody?.procurementId;
   if (typeof procurementId !== 'string' || procurementId.length === 0) {
     return NextResponse.json({ ok: false, error: 'procurementId wajib diisi.' }, { status: 400 });
   }
 
-  const order = SAMPLE_PROCUREMENTS.find((o) => o.id === procurementId);
+  // Cari di sample dulu; kalau tidak ada gunakan data order yang dikirim dari klien.
+  const order: JointProcurementView | undefined =
+    SAMPLE_PROCUREMENTS.find((o) => o.id === procurementId) ?? typedBody.order;
+
   if (!order) {
     return NextResponse.json(
-      { ok: false, error: 'Pengadaan tidak ditemukan untuk dicatat (jalur DB belum aktif).' },
+      { ok: false, error: 'Pengadaan tidak ditemukan.' },
       { status: 404 },
     );
   }

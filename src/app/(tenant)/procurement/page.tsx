@@ -6,6 +6,7 @@ import { hasPermission } from '@/constants/roles';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 import { MELATI_JAYA_ID } from '@/lib/procurement/cooperatives';
 import { getProcurementFabricStatus } from '@/lib/procurement/fabric';
+import { SAMPLE_PROCUREMENTS } from '@/lib/procurement/samples';
 
 export const metadata: Metadata = {
   title: 'Pengadaan Bersama · Arta',
@@ -27,7 +28,7 @@ export default async function ProcurementPage(): Promise<React.JSX.Element> {
 
   return (
     <ProcurementWorkspace
-      orders={[]}
+      orders={SAMPLE_PROCUREMENTS}
       tenantName={identity.tenantName}
       fabric={fabric}
       canCreate={canCreate}

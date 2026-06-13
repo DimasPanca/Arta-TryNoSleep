@@ -48,14 +48,41 @@ export default async function StockPage({
       const supabase = await createServerClient();
       const { data, error: dbErr } = await supabase
         .from('stock_batches')
-        .select('id, tenant_id, commodity, quantity_kg, grade, quality_score, status, received_at, updated_at, created_by')
+        .select('id, tenant_id, commodity, quantity_kg, grade, quality_score, status, storage_type, received_at, expires_at, updated_at, created_by')
         .eq('tenant_id', tenantId)
         .order('updated_at', { ascending: false });
 
       if (dbErr) {
         error = `Database: ${dbErr.message}`;
       } else if (data && data.length > 0) {
-        rows = buildStockLedgerRowsFromDb(data as DbStockBatch[]);
+        // Ambil kondisi scan terbaru per batch untuk prediksi masa simpan.
+        const batchIds = (data as Array<{ id: string }>).map((b) => b.id);
+        const ripenessByBatch = new Map<string, { color_ripeness: string; surface_condition: string }>();
+        const { data: scans } = await supabase
+          .from('scan_records')
+          .select('batch_id, color_ripeness, surface_condition, scanned_at')
+          .in('batch_id', batchIds)
+          .order('scanned_at', { ascending: false });
+
+        for (const s of (scans ?? []) as Array<{ batch_id: string | null; color_ripeness: string; surface_condition: string }>) {
+          if (s.batch_id && !ripenessByBatch.has(s.batch_id)) {
+            ripenessByBatch.set(s.batch_id, {
+              color_ripeness: s.color_ripeness,
+              surface_condition: s.surface_condition,
+            });
+          }
+        }
+
+        const enriched: DbStockBatch[] = (data as DbStockBatch[]).map((b) => {
+          const scan = ripenessByBatch.get(b.id);
+          return {
+            ...b,
+            color_ripeness: scan?.color_ripeness ?? null,
+            surface_condition: scan?.surface_condition ?? null,
+          };
+        });
+
+        rows = buildStockLedgerRowsFromDb(enriched);
         error = null;
       }
     } catch (caught) {

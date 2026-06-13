@@ -1,5 +1,6 @@
+import type { ColorRipeness, SurfaceCondition } from '@/lib/stock/shelf-life';
 import type { BlockchainAction, TraceHistoryEntry, TraceHistoryResponse } from '@/types/blockchain';
-import type { QualityGrade } from '@/types/stock';
+import type { QualityGrade, StorageType } from '@/types/stock';
 
 export interface DbStockBatch {
   id: string;
@@ -12,6 +13,11 @@ export interface DbStockBatch {
   received_at: string;
   updated_at: string;
   created_by: string | null;
+  storage_type?: string | null;
+  expires_at?: string | null;
+  /** Diambil dari scan_record terbaru batch ini (untuk prediksi masa simpan). */
+  color_ripeness?: string | null;
+  surface_condition?: string | null;
 }
 
 export interface StockLedgerEvent {
@@ -42,6 +48,11 @@ export interface StockLedgerRow {
   eventCount: number;
   active: boolean;
   events: StockLedgerEvent[];
+  /** Field pendukung prediksi masa simpan (opsional; lengkap untuk baris dari DB). */
+  storageType: StorageType;
+  expiresAt: string | null;
+  colorRipeness: ColorRipeness | null;
+  surfaceCondition: SurfaceCondition | null;
 }
 
 export const STOCK_LEDGER_ACTION_LABELS: Record<BlockchainAction, string> = {
@@ -89,6 +100,11 @@ export function buildStockLedgerRows(histories: TraceHistoryResponse[]): StockLe
       eventCount: entries.length,
       active: latest.action !== 'batch_dispatched' && latest.action !== 'batch_expired',
       events,
+      // Fabric record tidak menyimpan jenis penyimpanan / kondisi scan — default aman.
+      storageType: 'ambient',
+      expiresAt: null,
+      colorRipeness: null,
+      surfaceCondition: null,
     });
   }
 
@@ -134,6 +150,10 @@ export function buildStockLedgerRowsFromDb(batches: DbStockBatch[]): StockLedger
         farmerId:         null,
         eventCount:       1,
         active:           b.status === 'available',
+        storageType:      (b.storage_type === 'cold' ? 'cold' : 'ambient') as StorageType,
+        expiresAt:        b.expires_at ?? null,
+        colorRipeness:    (b.color_ripeness as ColorRipeness | null) ?? null,
+        surfaceCondition: (b.surface_condition as SurfaceCondition | null) ?? null,
         events: [{
           txId:         `db-${b.id}`,
           timestamp:    b.received_at,

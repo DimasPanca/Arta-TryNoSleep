@@ -11,7 +11,7 @@ import {
   TextField,
 } from '@/components/auth/fields';
 import { createClient } from '@/lib/supabase/client';
-import { toE164 } from '@/lib/utils/phone';
+import { phoneToAuthEmail, toE164 } from '@/lib/utils/phone';
 
 export function LoginForm(): ReactNode {
   const router = useRouter();
@@ -33,9 +33,10 @@ export function LoginForm(): ReactNode {
 
     setLoading(true);
     try {
+      // Phone login uses a deterministic derived email (no Supabase phone auth required)
       const credentials = identifier.includes('@')
         ? { email: identifier.trim(), password }
-        : { phone: toE164(identifier), password };
+        : { email: phoneToAuthEmail(toE164(identifier)), password };
 
       const { error: signInError } = await supabase.auth.signInWithPassword(credentials);
       if (signInError) throw signInError;

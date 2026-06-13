@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import type React from 'react';
 
+import { createClient } from '@supabase/supabase-js';
+
 import { getInviteByToken } from '@/lib/supabase/admin';
 
-import { RegisterForm, type InviteContext } from './RegisterForm';
+import { RegisterForm, type InviteContext, type TenantOption } from './RegisterForm';
 
 export const metadata: Metadata = {
   title: 'Daftar · Arta',
@@ -39,9 +41,30 @@ export default async function RegisterPage({
     }
   }
 
-  const props: { invite?: InviteContext; inviteError?: string } = {};
-  if (invite) props.invite = invite;
-  if (inviteError) props.inviteError = inviteError;
+  // Ambil daftar koperasi via anon client (policy "tenants_select_anon" memberi akses publik)
+  let tenants: TenantOption[] = [];
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } },
+    );
+    const { data, error } = await supabase
+      .from('tenants')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name');
+    if (error) console.error('[register/page] tenants fetch error:', error.message);
+    tenants = (data ?? []) as TenantOption[];
+  } catch (e) {
+    console.error('[register/page] tenants fetch threw:', e);
+  }
 
-  return <RegisterForm {...props} />;
+  return (
+    <RegisterForm
+      {...(invite !== undefined ? { invite } : {})}
+      {...(inviteError !== undefined ? { inviteError } : {})}
+      tenants={tenants}
+    />
+  );
 }

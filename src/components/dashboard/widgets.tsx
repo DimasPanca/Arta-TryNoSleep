@@ -278,6 +278,61 @@ export function ExpiryList({ items }: { items: ExpiryItem[] }): ReactNode {
   );
 }
 
+/* ── ShelfLifeBanner ────────────────────────────────────────── */
+export interface ShelfLifeAttentionItem {
+  commodity: string;
+  quantityKg: number;
+  daysLeft: number;
+  urgencyLabel: string;
+  color: string;
+}
+
+export function ShelfLifeBanner({ items }: { items: ShelfLifeAttentionItem[] }): ReactNode {
+  if (items.length === 0) return null;
+  const top = items.slice(0, 5);
+
+  return (
+    <Link
+      href="/stock"
+      className="block rounded-2xl border border-[var(--color-amber-400)]/50 bg-[var(--color-amber-100)] p-4 transition-colors hover:border-[var(--color-amber-400)] cursor-pointer"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-[var(--color-amber-400)] text-white">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
+            <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Zm4 11a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {items.length} batch mendekati masa busuk — perlu segera dijual
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+            Tindak lanjuti agar stok tidak terbuang. Klik untuk membuka prioritas penjualan.
+          </p>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {top.map((it, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 rounded-full border bg-[var(--color-surface-card)] px-2.5 py-1 text-xs font-medium"
+                style={{ borderColor: it.color, color: it.color }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: it.color }} />
+                {it.commodity} · {it.quantityKg.toLocaleString('id-ID')} kg ·{' '}
+                {it.daysLeft <= 0 ? 'lewat' : `${it.daysLeft} hari`}
+              </span>
+            ))}
+            {items.length > top.length && (
+              <span className="inline-flex items-center rounded-full bg-[var(--color-surface-card)] px-2.5 py-1 text-xs text-[var(--color-text-muted)]">
+                +{items.length - top.length} lainnya
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 /* ── ActionHero ─────────────────────────────────────────────── */
 export function ActionHero({
   href,

@@ -110,16 +110,26 @@ export function MembersWorkspace({
     flash(`${m?.fullName ?? 'Anggota'} dikeluarkan dari koperasi.`);
   }
 
-  function handleApprove(id: string): void {
+  async function handleApprove(id: string): Promise<void> {
     const p = pending.find((x) => x.id === id);
     if (!p) return;
+    const res = await fetch(`/api/members/${id}/approve`, { method: 'POST' });
+    if (!res.ok) {
+      flash('Gagal menyetujui anggota. Coba lagi.');
+      return;
+    }
     setPending((prev) => prev.filter((x) => x.id !== id));
     setMembers((prev) => [{ ...p, status: 'active', joinedAt: new Date().toISOString() }, ...prev]);
     flash(`Pendaftaran ${p.fullName} disetujui. Kini anggota aktif.`);
   }
 
-  function handleReject(id: string): void {
+  async function handleReject(id: string): Promise<void> {
     const p = pending.find((x) => x.id === id);
+    const res = await fetch(`/api/members/${id}/reject`, { method: 'POST' });
+    if (!res.ok) {
+      flash('Gagal menolak pendaftaran. Coba lagi.');
+      return;
+    }
     setPending((prev) => prev.filter((x) => x.id !== id));
     flash(`Pendaftaran ${p?.fullName ?? ''} ditolak.`);
   }
@@ -562,8 +572,8 @@ function PendingTab({
 }: {
   pending: MemberRecord[];
   canApprove: boolean;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onApprove: (id: string) => Promise<void>;
+  onReject: (id: string) => Promise<void>;
 }): ReactNode {
   if (pending.length === 0) {
     return (
