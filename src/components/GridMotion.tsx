@@ -25,29 +25,28 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black', 
     };
 
     const updateMotion = (): void => {
-      const maxMoveAmount = 150;
-      const baseDuration = 1.2;
-      const inertiaFactors = [0.8, 0.6, 0.7, 0.5];
-      const speed = 0.08;
+      const maxMoveAmount = 300;
+      const baseDuration = 0.8;
+      const inertiaFactors = [0.6, 0.4, 0.3, 0.2];
+      const speed = 0.15;
 
       rowRefs.current.forEach((row, index) => {
         if (row) {
-          // Opposing vertical motion: even rows go up, odd rows go down
-          const direction = index % 2 === 0 ? -1 : 1;
+          const direction = index % 2 === 0 ? 1 : -1;
 
           let moveAmount: number;
           if (autoPlay) {
-            // Auto-animate: sine wave oscillation for smooth up-down
-            const phaseOffset = index * 1.2;
-            moveAmount = Math.sin(timeRef.current * speed + phaseOffset) * maxMoveAmount * 0.5;
+            // Auto-animate: sine wave oscillation, each row slightly offset
+            const phaseOffset = index * 0.6;
+            moveAmount = Math.sin(timeRef.current * speed + phaseOffset) * maxMoveAmount * 0.6;
           } else {
             moveAmount = ((mouseXRef.current / window.innerWidth) * maxMoveAmount - maxMoveAmount / 2) * direction;
           }
 
           gsap.to(row, {
-            y: moveAmount,
+            x: moveAmount,
             duration: baseDuration + inertiaFactors[index % inertiaFactors.length],
-            ease: 'power1.inOut',
+            ease: 'power3.out',
             overwrite: 'auto'
           });
         }

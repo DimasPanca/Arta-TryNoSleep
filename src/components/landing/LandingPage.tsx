@@ -399,7 +399,7 @@ export function LandingPage(): React.JSX.Element {
       />
 
       {/* ── HERO ────────────────────────────────────────────── */}
-      <section className="relative min-h-screen overflow-hidden text-white">
+      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-32 text-white">
         {/* Latar gelap elegan */}
         <div
           aria-hidden
@@ -410,6 +410,9 @@ export function LandingPage(): React.JSX.Element {
           }}
         />
         <div aria-hidden className="arta-grid-overlay absolute inset-0 z-0 opacity-40" />
+
+        {/* GridMotion  animasi grid di sebelah kiri */}
+        {!reduce && <GridMotionWrapper />}
 
         {/* SideRays  emas + langit, dari kanan atas */}
         {!reduce && (
@@ -437,15 +440,8 @@ export function LandingPage(): React.JSX.Element {
           style={{ background: 'linear-gradient(to bottom, transparent, var(--color-surface))' }}
         />
 
-        {/* Layout dua kolom: kiri GridMotion, kanan konten */}
-        <div className="relative z-10 flex min-h-screen flex-col md:flex-row">
-          {/* Kiri: GridMotion */}
-          <div className="flex-1 hidden md:block overflow-hidden">
-            {!reduce && <GridMotionWrapper />}
-          </div>
-
-          {/* Kanan: konten hero */}
-          <div className="flex-1 flex items-center justify-center px-6 py-32 md:py-24 lg:pl-12">
+        {/* Konten hero */}
+        <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={reduce ? {} : { opacity: 1, y: 0 }}
@@ -518,8 +514,7 @@ export function LandingPage(): React.JSX.Element {
               </li>
             ))}
           </motion.ul>
-        </div>{/* /konten hero */}
-      </div>{/* /flex container */}
+        </div>
       </section>
 
       {/* ── MARQUEE koperasi (ScrollVelocity) ───────────────── */}
