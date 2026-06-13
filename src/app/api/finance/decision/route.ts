@@ -5,12 +5,11 @@ import { recordValidatorDecision } from '@/lib/blockchain/record';
 import { getLoanApplicationById } from '@/lib/finance/applications';
 import { submitDecision } from '@/lib/finance/lifecycle';
 import { createServerClient } from '@/lib/supabase/server';
-import type { InternalValidator, Verdict } from '@/types/finance';
+import type { ValidatorType } from '@/types/blockchain';
+import type { Verdict } from '@/types/finance';
 import type { TenantRole } from '@/types/tenant';
 
 export const runtime = 'nodejs';
-
-const INTERNAL: InternalValidator[] = ['bendahara', 'ketua', 'wakil_ketua'];
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const supabase = await createServerClient();
@@ -27,7 +26,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .maybeSingle();
 
   const m = member as { role: TenantRole; tenant_id: string } | null;
-  if (!m || !hasPermission(m.role, 'finance:approve') || !INTERNAL.includes(m.role as InternalValidator)) {
+  if (!m || !hasPermission(m.role, 'finance:approve')) {
     return NextResponse.json({ ok: false, error: 'Peran Anda tidak boleh memutuskan pengajuan.' }, { status: 403 });
   }
 
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await submitDecision({
       applicationId,
       validatorId: user.id,
-      validatorType: m.role as InternalValidator,
+      validatorType: m.role as ValidatorType,
       tenantId: m.tenant_id,
       verdict,
       ...(reason !== undefined && { reason }),
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Jejak immutable ke Hyperledger Fabric (best-effort)
   void recordValidatorDecision(applicationId, {
     validatorId: user.id,
-    validatorType: m.role as InternalValidator,
+    validatorType: m.role as ValidatorType,
     verdict,
     reason: reason ?? '',
   }).catch((err) => console.error('[api/finance/decision] Fabric gagal:', err));
