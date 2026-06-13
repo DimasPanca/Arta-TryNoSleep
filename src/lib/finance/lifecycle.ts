@@ -1,6 +1,7 @@
 import { getLoanApplicationById } from '@/lib/finance/applications';
 import { createServerClient } from '@/lib/supabase/server';
-import type { InstallmentStatus, InternalValidator, LoanInstallment, Verdict } from '@/types/finance';
+import type { ValidatorType } from '@/types/blockchain';
+import type { InstallmentStatus, LoanInstallment, Verdict } from '@/types/finance';
 
 interface InstallmentRow {
   id: string;
@@ -40,7 +41,7 @@ function addMonths(base: Date, n: number): string {
 export async function submitDecision(params: {
   applicationId: string;
   validatorId: string;
-  validatorType: InternalValidator;
+  validatorType: ValidatorType;
   tenantId: string;
   verdict: Verdict;
   reason?: string;
