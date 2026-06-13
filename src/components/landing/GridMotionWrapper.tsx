@@ -22,7 +22,7 @@ const GRID_ITEMS: string[] = [
 
 export default function GridMotionWrapper(): React.ReactElement {
   return (
-    <div className="absolute left-0 top-0 w-1/2 h-full overflow-hidden opacity-40 md:opacity-60 pointer-events-none">
+    <div className="flex-1 h-full overflow-hidden opacity-50 md:opacity-70 pointer-events-none">
       <GridMotion
         items={GRID_ITEMS}
         gradientColor="#0f2a0f"
