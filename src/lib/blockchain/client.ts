@@ -26,6 +26,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
         ...init.headers,
       },
     });

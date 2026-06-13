@@ -6,7 +6,6 @@ import { hasPermission } from '@/constants/roles';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 import { MELATI_JAYA_ID } from '@/lib/procurement/cooperatives';
 import { getProcurementFabricStatus } from '@/lib/procurement/fabric';
-import { SAMPLE_PROCUREMENTS } from '@/lib/procurement/samples';
 
 export const metadata: Metadata = {
   title: 'Pengadaan Bersama · Arta',
@@ -23,17 +22,13 @@ export default async function ProcurementPage(): Promise<React.JSX.Element> {
 
   const canCreate = hasPermission(identity.role, 'procurement:write');
   const tenantId = identity.tenantId ?? MELATI_JAYA_ID;
-  const tenantName = identity.tenantId ? identity.tenantName : 'Koperasi Melati Jaya';
 
   const fabric = await getProcurementFabricStatus(tenantId);
 
-  // Saat ini sumber data pengadaan adalah fixtures jejaring 5 koperasi.
-  // Jalur DB nyata (joint_procurements) di-wire bertahap via API; halaman
-  // tetap fungsional & informatif tanpa bergantung pada koneksi Fabric.
   return (
     <ProcurementWorkspace
-      orders={SAMPLE_PROCUREMENTS}
-      tenantName={tenantName}
+      orders={[]}
+      tenantName={identity.tenantName}
       fabric={fabric}
       canCreate={canCreate}
       preview={identity.preview}

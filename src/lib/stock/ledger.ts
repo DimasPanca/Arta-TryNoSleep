@@ -1,6 +1,19 @@
 import type { BlockchainAction, TraceHistoryEntry, TraceHistoryResponse } from '@/types/blockchain';
 import type { QualityGrade } from '@/types/stock';
 
+export interface DbStockBatch {
+  id: string;
+  tenant_id: string;
+  commodity: string;
+  quantity_kg: number;
+  grade: string;
+  quality_score: number;
+  status: string;
+  received_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
 export interface StockLedgerEvent {
   txId: string;
   timestamp: string;
@@ -91,4 +104,46 @@ function compareEntries(a: TraceHistoryEntry, b: TraceHistoryEntry): number {
 function toTime(value: string): number {
   const time = new Date(value).getTime();
   return Number.isFinite(time) ? time : 0;
+}
+
+const DB_STATUS_TO_ACTION: Record<string, BlockchainAction> = {
+  available:  'batch_received',
+  dispatched: 'batch_dispatched',
+  expired:    'batch_expired',
+};
+
+/** Bangun StockLedgerRow dari baris Supabase stock_batches (fallback saat Fabric offline). */
+export function buildStockLedgerRowsFromDb(batches: DbStockBatch[]): StockLedgerRow[] {
+  return batches
+    .map((b) => {
+      const action: BlockchainAction = DB_STATUS_TO_ACTION[b.status] ?? 'batch_received';
+      return {
+        batchId:          b.id,
+        tenantId:         b.tenant_id,
+        commodity:        b.commodity,
+        quantityKg:       Number(b.quantity_kg),
+        grade:            b.grade as QualityGrade,
+        qualityScore:     Number(b.quality_score),
+        latestAction:     action,
+        latestActionLabel: STOCK_LEDGER_ACTION_LABELS[action],
+        latestAt:         b.updated_at,
+        latestTxId:       `db-${b.id}`,
+        firstSeenAt:      b.received_at,
+        firstTxId:        `db-${b.id}`,
+        operatorId:       b.created_by ?? '',
+        farmerId:         null,
+        eventCount:       1,
+        active:           b.status === 'available',
+        events: [{
+          txId:         `db-${b.id}`,
+          timestamp:    b.received_at,
+          action,
+          actionLabel:  STOCK_LEDGER_ACTION_LABELS[action],
+          quantityKg:   Number(b.quantity_kg),
+          grade:        b.grade as QualityGrade,
+          qualityScore: Number(b.quality_score),
+        }],
+      };
+    })
+    .sort((a, b) => toTime(b.latestAt) - toTime(a.latestAt));
 }

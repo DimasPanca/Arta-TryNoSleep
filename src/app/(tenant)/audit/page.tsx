@@ -3,23 +3,15 @@ import type React from 'react';
 
 import { AuditWorkspace } from '@/components/audit/AuditWorkspace';
 import { hasPermission } from '@/constants/roles';
-import {
-  SAMPLE_ACTIVITIES,
-  SAMPLE_ANOMALIES,
-  SAMPLE_BLOCKCHAIN,
-  SAMPLE_FABRIC_INTEGRITY,
-  SAMPLE_PORTFOLIO,
-  SAMPLE_REPORTS,
-  SAMPLE_TRUST_SIGNALS,
-  TREND_ACTIVITY,
-  TREND_ANCHORED,
-  TREND_DISBURSED,
-  TREND_TRUST,
-} from '@/lib/audit/audit-samples';
+import type {
+  CoopPortfolio,
+  FabricIntegrity,
+  TrustSignals,
+} from '@/lib/audit/audit-overview';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 
 export const metadata: Metadata = {
-  title: 'Audit & Portofolio — Arta',
+  title: 'Audit & Portofolio · Arta',
 };
 
 export const dynamic = 'force-dynamic';
@@ -31,23 +23,58 @@ export default async function AuditPage(): Promise<React.JSX.Element> {
     return <NoAccess />;
   }
 
-  const tenantName = identity.tenantId ? identity.tenantName : 'Koperasi Melati Jaya';
+  const tenantName = identity.tenantName;
+  const fabricUrl = process.env.HYPERLEDGER_API_URL ?? '';
+
+  let fabricOnline = false;
+  if (fabricUrl) {
+    try {
+      const res = await fetch(`${fabricUrl}/health`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+      fabricOnline = res.ok;
+    } catch {
+      fabricOnline = false;
+    }
+  }
+
+  const fabric: FabricIntegrity = {
+    online: fabricOnline,
+    configuredUrl: fabricUrl,
+    checkedAt: new Date().toISOString(),
+    totalAnchored: 0,
+    totalUnanchored: 0,
+    connectedPeers: [],
+  };
+
+  const signals: TrustSignals = {
+    repaymentRate: 0,
+    anchoringCoverage: 0,
+    nplRate: 0,
+    crossVerifiedRatio: 0,
+    anomalyResolution: 0,
+    yearsActive: 0,
+  };
+
+  const portfolio: CoopPortfolio = {
+    coopName: tenantName,
+    coopId: identity.tenantId ?? '',
+    sector: '',
+    location: '',
+    establishedYear: new Date().getFullYear(),
+    scope: 'full',
+    sections: [],
+    generatedAt: new Date().toISOString(),
+  };
 
   return (
     <AuditWorkspace
-      anomalies={SAMPLE_ANOMALIES}
-      activities={SAMPLE_ACTIVITIES}
-      blockchain={SAMPLE_BLOCKCHAIN}
-      reports={SAMPLE_REPORTS}
-      portfolio={SAMPLE_PORTFOLIO}
-      fabric={SAMPLE_FABRIC_INTEGRITY}
-      signals={SAMPLE_TRUST_SIGNALS}
-      trends={{
-        anchored: TREND_ANCHORED,
-        disbursed: TREND_DISBURSED,
-        activity: TREND_ACTIVITY,
-        trust: TREND_TRUST,
-      }}
+      anomalies={[]}
+      activities={[]}
+      blockchain={[]}
+      reports={[]}
+      portfolio={portfolio}
+      fabric={fabric}
+      signals={signals}
+      trends={{ anchored: [], disbursed: [], activity: [], trust: [] }}
       viewerRole={identity.role}
       tenantName={tenantName}
       preview={identity.preview}
