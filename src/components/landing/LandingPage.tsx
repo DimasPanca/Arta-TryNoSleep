@@ -75,6 +75,9 @@ const ScrollVelocity = dynamic(() => import('@/components/ScrollVelocity'), {
 const CardNav = dynamic(() => import('@/components/CardNav'), {
   ssr: false,
 }) as ComponentType<CardNavProps>;
+const GridMotionWrapper = dynamic(() => import('./GridMotionWrapper'), {
+  ssr: false,
+}) as ComponentType<object>;
 
 /* ── Palet aksen selaras SideRays ─────────────────────────────── */
 const GOLD = '#EAB308';
@@ -407,6 +410,9 @@ export function LandingPage(): React.JSX.Element {
           }}
         />
         <div aria-hidden className="arta-grid-overlay absolute inset-0 z-0 opacity-40" />
+
+        {/* GridMotion  animasi grid di sebelah kiri */}
+        {!reduce && <GridMotionWrapper />}
 
         {/* SideRays  emas + langit, dari kanan atas */}
         {!reduce && (
