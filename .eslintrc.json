@@ -8,6 +8,7 @@
     "src/components/SideRays.jsx",
     "src/components/ScrollVelocity.jsx",
     "src/components/CardNav.jsx",
+    "src/components/CircularGallery.tsx"
     "src/components/Carousel.jsx",
     "src/components/ProfileCard.jsx"
   ],

@@ -155,7 +155,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       amount: parsed.amount,
       purpose: parsed.purpose ?? application.assetName ?? '',
       submittedAt: application.createdAt,
-    }).then(() => {
+    }).then((_blockchainResult) => {
+      // Auto-evaluate via chaincode setelah submit berhasil
       return autoEvaluateLoan(application.id).catch((evalErr) => {
         console.error('[finance/applications] AutoEvaluate gagal:', evalErr);
         return null;

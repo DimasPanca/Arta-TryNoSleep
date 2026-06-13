@@ -18,7 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Request body tidak valid' }, { status: 400 });
   }
 
-  const { applicantId } = body as Record<string, string>;
+  const { applicantId, requestingTenantId: _requestingTenantId } = body as Record<string, string>;
   if (!applicantId) {
     return NextResponse.json({ error: 'applicantId wajib diisi' }, { status: 400 });
   }

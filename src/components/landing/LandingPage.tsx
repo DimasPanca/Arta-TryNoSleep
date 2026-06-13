@@ -65,6 +65,10 @@ interface CardNavProps {
 const SideRays = dynamic(() => import('@/components/SideRays'), {
   ssr: false,
 }) as ComponentType<SideRaysProps>;
+const CircularGalleryWrapper = dynamic(
+  () => import('@/components/landing/CircularGalleryWrapper'),
+  { ssr: false },
+);
 const ScrollVelocity = dynamic(() => import('@/components/ScrollVelocity'), {
   ssr: false,
 }) as ComponentType<ScrollVelocityProps>;
@@ -77,31 +81,32 @@ const GOLD = '#EAB308';
 const NAV_ITEMS: CardNavItem[] = [
   {
     label: 'Platform',
-    bgColor: '#0f2a0f',
+    bgColor: '#173a17',
     textColor: '#ffffff',
     links: [
-      { label: 'Modul lengkap', href: '#modul', ariaLabel: 'Lihat modul' },
-      { label: 'Teknologi', href: '#teknologi', ariaLabel: 'Lihat teknologi' },
-      { label: 'Keunggulan', href: '#manfaat', ariaLabel: 'Lihat keunggulan' },
+      { label: 'Dashboard Stok', href: '#modul', ariaLabel: 'Dashboard Stok' },
+      { label: 'AI Scan Mutu', href: '#scan-mutu', ariaLabel: 'AI Scan Mutu' },
+      { label: 'Manajemen Anggota', href: '#anggota', ariaLabel: 'Manajemen Anggota' },
     ],
   },
   {
     label: 'Solusi',
-    bgColor: '#1e4a1e',
+    bgColor: '#1e3a5f',
     textColor: '#ffffff',
     links: [
-      { label: 'Studi kasus', href: '#studi-kasus', ariaLabel: 'Lihat studi kasus' },
-      { label: 'Untuk mitra pembiayaan', href: '#mitra', ariaLabel: 'Untuk mitra pembiayaan' },
-      { label: 'Jaringan koperasi', href: '#jaringan', ariaLabel: 'Jaringan koperasi' },
+      { label: 'Skor Kepercayaan', href: '#skor-kepercayaan', ariaLabel: 'Skor Kepercayaan' },
+      { label: 'Portofolio Kredit', href: '#portofolio', ariaLabel: 'Portofolio Kredit' },
+      { label: 'Riwayat Transaksi', href: '#riwayat', ariaLabel: 'Riwayat Transaksi' },
     ],
   },
   {
     label: 'Mulai',
-    bgColor: '#2d6a2d',
+    bgColor: '#3d2e1a',
     textColor: '#ffffff',
     links: [
-      { label: 'Masuk', href: '/login', ariaLabel: 'Masuk ke sistem' },
-      { label: 'Daftar anggota', href: '/register', ariaLabel: 'Daftar sebagai anggota' },
+      { label: 'Agregasi Koperasi', href: '#agregasi', ariaLabel: 'Agregasi Koperasi' },
+      { label: 'Program Digitalisasi', href: '#digitalisasi', ariaLabel: 'Program Digitalisasi' },
+      { label: 'Laporan Kinerja', href: '#laporan', ariaLabel: 'Laporan Kinerja' },
     ],
   },
 ];
@@ -226,6 +231,41 @@ const COOPS: Coop[] = [
   { name: 'Sumber Makmur', focus: 'Pupuk & toko gerai', location: 'Pangalengan', accent: '#d97706', us: false },
   { name: 'Tirta Bersama', focus: 'Air bersih & simpan pinjam', location: 'Cimenyan', accent: '#0891b2', us: false },
   { name: 'Harapan Baru', focus: 'Ternak & pakan', location: 'Kertasari', accent: '#7c3aed', us: false },
+];
+
+interface Stakeholder {
+  name: string;
+  role: string;
+  desc: string;
+  accent: string;
+  icon: ReactNode;
+  bullets: string[];
+}
+const STAKEHOLDERS: Stakeholder[] = [
+  {
+    name: 'Pengurus Koperasi',
+    role: 'Untuk Pengelola Harian',
+    desc: 'Pantau stok real-time, prioritaskan penjualan sebelum sayuran membusuk, dan kelola operasional harian dari satu dashboard.',
+    accent: '#173a17',
+    icon: <path d="M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z" />,
+    bullets: ['Pantau stok real-time dari gudang hingga display', 'Prioritaskan penjualan sayuran mendekati masa kedaluwarsa', 'Operasional harian kelola dari satu dashboard'],
+  },
+  {
+    name: 'Mitra Pembiayaan',
+    role: 'Bank & Investor',
+    desc: 'Akses data portofolio koperasi yang sudah divalidasi on-chain: total aset stok, performa kualitas, riwayat transaksi. Tidak bisa dimanipulasi.',
+    accent: '#1e3a5f',
+    icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+    bullets: ['Data portofolio divalidasi on-chain tanpa bisa diubah', 'Total aset stok & performa kualitas riil koperasi', 'Riwayat transaksi transparan siap diaudit kapan saja'],
+  },
+  {
+    name: 'Pemerintah Kabupaten',
+    role: 'Untuk Pengambil Kebijakan',
+    desc: 'Pantau performa agregat berbagai koperasi untuk program digitalisasi daerah dengan data yang akurat dan real-time.',
+    accent: '#3d2e1a',
+    icon: <path d="M3 21h18M6 7l3-3 3 3M6 7v14m6-14v14M9 11v4m6-4v4" />,
+    bullets: ['Performa agregat berbagai koperasi dalam satu tampilan', 'Program digitalisasi daerah terukur dengan data akurat', 'Dashboard real-time untuk keputusan kebijakan tepat'],
+  },
 ];
 
 /* ── Helper UI ────────────────────────────────────────────────── */
@@ -366,22 +406,10 @@ export function LandingPage(): React.JSX.Element {
         />
         <div aria-hidden className="arta-grid-overlay absolute inset-0 z-0 opacity-40" />
 
-        {/* SideRays  emas + langit, dari kanan atas */}
+        {/* CircularGallery  WebGL latar, auto-rotate */}
         {!reduce && (
-          <div className="arta-rays" aria-hidden>
-            <SideRays
-              rayColor1={GOLD}
-              rayColor2="#96c8ff"
-              origin="top-right"
-              speed={2.5}
-              intensity={2}
-              spread={2}
-              tilt={0}
-              saturation={1.5}
-              blend={0.75}
-              falloff={1.6}
-              opacity={1}
-            />
+          <div className="absolute inset-0 z-[1]" aria-hidden>
+            <CircularGalleryWrapper />
           </div>
         )}
 
@@ -486,6 +514,49 @@ export function LandingPage(): React.JSX.Element {
           className="custom-scroll-text"
           scrollerClassName="!text-transparent"
         />
+      </section>
+
+      {/* ── STAKEHOLDER ─────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <Reveal className="max-w-2xl">
+          <Eyebrow>Untuk siapa Arta</Eyebrow>
+          <h2 className="mt-5 font-[var(--font-display)] text-3xl leading-tight tracking-tight sm:text-[2.6rem]">
+            Tiga pihak, satu platform kepercayaan.
+          </h2>
+        </Reveal>
+
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          {STAKEHOLDERS.map((s, i) => (
+            <Reveal key={s.name} delay={(i % 3) * 0.1}>
+              <div className="group relative h-full overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-7 transition-all duration-200 hover:-translate-y-1 hover:border-[var(--color-brand-200)] hover:shadow-[0_24px_60px_-32px_rgba(15,42,15,0.35)]">
+                <span aria-hidden className="absolute right-0 top-0 h-1.5 w-full" style={{ backgroundColor: s.accent }} />
+                <span
+                  className="grid h-14 w-14 place-items-center rounded-xl text-white transition-transform duration-200 group-hover:scale-105"
+                  style={{ backgroundColor: s.accent }}
+                >
+                  <Icon className="h-7 w-7">{s.icon}</Icon>
+                </span>
+                <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                  {s.role}
+                </div>
+                <h3 className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">{s.name}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  {s.desc}
+                </p>
+                <ul className="mt-5 space-y-2">
+                  {s.bullets.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                      <span className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full" style={{ backgroundColor: `${s.accent}1a`, color: s.accent }}>
+                        <Icon className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></Icon>
+                      </span>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* ── MASALAH ─────────────────────────────────────────── */}
