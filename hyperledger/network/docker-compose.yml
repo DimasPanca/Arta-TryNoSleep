@@ -1,0 +1,291 @@
+networks:
+  arta_net:
+    name: arta_net
+
+x-couchdb-template: &couchdb-template
+  image: couchdb:3.3
+  environment:
+    - COUCHDB_USER=admin
+    - COUCHDB_PASSWORD=adminpw
+  networks:
+    - arta_net
+
+x-peer-template: &peer-template
+  image: hyperledger/fabric-peer:2.5
+  environment:
+    - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+    - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+    - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+    - CORE_PEER_TLS_ENABLED=false
+    - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+    - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+    - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    - FABRIC_LOGGING_SPEC=INFO
+  volumes:
+    - /var/run/docker.sock:/host/var/run/docker.sock
+  networks:
+    - arta_net
+
+services:
+  orderer.example.com:
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=false
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=/var/hyperledger/orderer/tls/ca.crt
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ./crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/var/hyperledger/orderer/tls
+      - ./channel-artifacts/genesis.block:/etc/hyperledger/fabric/genesisblock
+    ports:
+      - 7050:7050
+    networks:
+      - arta_net
+
+  # ----------------------------------------------------
+  # PADIWANGI
+  # ----------------------------------------------------
+  couchdb0:
+    <<: *couchdb-template
+    container_name: couchdb0
+    ports:
+      - 5984:5984
+
+  peer0.padiwangi.arta.com:
+    <<: *peer-template
+    container_name: peer0.padiwangi.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.padiwangi.arta.com
+      - CORE_PEER_ADDRESS=peer0.padiwangi.arta.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.padiwangi.arta.com:7051
+      - CORE_PEER_LOCALMSPID=PadiwangiMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/padiwangi.arta.com/peers/peer0.padiwangi.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 7051:7051
+    depends_on:
+      - couchdb0
+
+  # ----------------------------------------------------
+  # MELATI JAYA
+  # ----------------------------------------------------
+  couchdb1:
+    <<: *couchdb-template
+    container_name: couchdb1
+    ports:
+      - 6984:5984
+
+  peer0.melatijaya.arta.com:
+    <<: *peer-template
+    container_name: peer0.melatijaya.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.melatijaya.arta.com
+      - CORE_PEER_ADDRESS=peer0.melatijaya.arta.com:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.melatijaya.arta.com:8051
+      - CORE_PEER_LOCALMSPID=MelatiJayaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/melatijaya.arta.com/peers/peer0.melatijaya.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 8051:8051
+    depends_on:
+      - couchdb1
+
+  # ----------------------------------------------------
+  # SUMBER MAKMUR
+  # ----------------------------------------------------
+  couchdb2:
+    <<: *couchdb-template
+    container_name: couchdb2
+    ports:
+      - 7984:5984
+
+  peer0.sumbermakmur.arta.com:
+    <<: *peer-template
+    container_name: peer0.sumbermakmur.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.sumbermakmur.arta.com
+      - CORE_PEER_ADDRESS=peer0.sumbermakmur.arta.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.sumbermakmur.arta.com:9051
+      - CORE_PEER_LOCALMSPID=SumberMakmurMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb2:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/sumbermakmur.arta.com/peers/peer0.sumbermakmur.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 9051:9051
+    depends_on:
+      - couchdb2
+
+  # ----------------------------------------------------
+  # TIRTA BERSAMA
+  # ----------------------------------------------------
+  couchdb3:
+    <<: *couchdb-template
+    container_name: couchdb3
+    ports:
+      - 8984:5984
+
+  peer0.tirtabersama.arta.com:
+    <<: *peer-template
+    container_name: peer0.tirtabersama.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.tirtabersama.arta.com
+      - CORE_PEER_ADDRESS=peer0.tirtabersama.arta.com:10051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.tirtabersama.arta.com:10051
+      - CORE_PEER_LOCALMSPID=TirtaBersamaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb3:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/tirtabersama.arta.com/peers/peer0.tirtabersama.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 10051:10051
+    depends_on:
+      - couchdb3
+
+  # ----------------------------------------------------
+  # HARAPAN BARU
+  # ----------------------------------------------------
+  couchdb4:
+    <<: *couchdb-template
+    container_name: couchdb4
+    ports:
+      - 9984:5984
+
+  peer0.harapanbaru.arta.com:
+    <<: *peer-template
+    container_name: peer0.harapanbaru.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.harapanbaru.arta.com
+      - CORE_PEER_ADDRESS=peer0.harapanbaru.arta.com:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.harapanbaru.arta.com:11051
+      - CORE_PEER_LOCALMSPID=HarapanBaruMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb4:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/harapanbaru.arta.com/peers/peer0.harapanbaru.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 11051:11051
+    depends_on:
+      - couchdb4
+
+  # ----------------------------------------------------
+  # DINAS
+  # ----------------------------------------------------
+  couchdb5:
+    <<: *couchdb-template
+    container_name: couchdb5
+    ports:
+      - 10984:5984
+
+  peer0.dinas.arta.com:
+    <<: *peer-template
+    container_name: peer0.dinas.arta.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=arta_net
+      - CORE_PEER_ID=peer0.dinas.arta.com
+      - CORE_PEER_ADDRESS=peer0.dinas.arta.com:12051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:12051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:12052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.dinas.arta.com:12051
+      - CORE_PEER_LOCALMSPID=DinasMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb5:5984
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./crypto-config/peerOrganizations/dinas.arta.com/peers/peer0.dinas.arta.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - 12051:12051
+    depends_on:
+      - couchdb5
+
+  # ----------------------------------------------------
+  # CLI (UNTUK EXECUTE COMMANDS DI START.SH)
+  # ----------------------------------------------------
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:2.5
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash -c 'while true; do sleep 30; done;'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto
+      - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      - ../chaincode:/opt/gopath/src/github.com/hyperledger/fabric/chaincode
+    networks:
+      - arta_net
+
+  fabric-rest-api:
+    container_name: fabric-rest-api
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npx ts-node src/server.ts"
+    environment:
+      - PORT=4000
+      - PEER_PADIWANGI_ENDPOINT=peer0.padiwangi.arta.com:7051
+      - PEER_MELATIJAYA_ENDPOINT=peer0.melatijaya.arta.com:8051
+      - PEER_SUMBERMAKMUR_ENDPOINT=peer0.sumbermakmur.arta.com:9051
+      - PEER_TIRTABERSAMA_ENDPOINT=peer0.tirtabersama.arta.com:10051
+      - PEER_HARAPANBARU_ENDPOINT=peer0.harapanbaru.arta.com:11051
+      - PEER_DINAS_ENDPOINT=peer0.dinas.arta.com:12051
+      - CRYPTO_PATH=/app/crypto-config/peerOrganizations
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../api:/app
+      - ./crypto-config:/app/crypto-config
+    networks:
+      - arta_net
+    depends_on:
+      - orderer.example.com
+      - peer0.padiwangi.arta.com
+      - peer0.melatijaya.arta.com
+      - peer0.sumbermakmur.arta.com
+      - peer0.tirtabersama.arta.com
+      - peer0.harapanbaru.arta.com
+      - peer0.dinas.arta.com

@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
-
 import { submitLoanApplication } from '@/lib/blockchain/record';
+import { autoEvaluateLoan } from '@/lib/blockchain/query';
+import { createServerClient } from '@/lib/supabase/server';
+import type { FinancingType } from '@/types/finance';
 import { createLoanApplication, getLoanApplications } from '@/lib/finance/applications';
 import { getCrossTenantCreditScore } from '@/lib/finance/credit';
 import { generateLoanRecommendation } from '@/lib/finance/recommendations';
-import { createServerClient } from '@/lib/supabase/server';
-import type { FinancingType } from '@/types/finance';
 
 export const runtime = 'nodejs';
 
@@ -146,14 +146,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const recommendation = await generateLoanRecommendation(application, credit.score);
 
-    void submitLoanApplication({
+    // Catat ke blockchain (fire-and-forget — tidak blokir response)
+    const fabricPromise = submitLoanApplication({
       applicationId: application.id,
       applicantId: user.id,
       targetTenantId: parsed.targetTenantId,
       amount: parsed.amount,
       purpose: parsed.purpose ?? application.assetName ?? '',
       submittedAt: application.createdAt,
-    }).catch((err) => console.error('[api/finance/applications] Fabric gagal:', err));
+    }).then((blockchainResult) => {
+      // Auto-evaluate via chaincode setelah submit berhasil
+      return autoEvaluateLoan(application.id).catch((evalErr) => {
+        console.warn('[finance/applications] AutoEvaluate gagal:', evalErr);
+        return null;
+      });
+    }).catch((err) => {
+      console.error('[finance/applications] Fabric submit gagal:', err);
+      return null;
+    });
+
+    // Jangan await fabric — response cepat untuk frontend
+    void fabricPromise;
 
     return NextResponse.json({ data: { application, recommendation } }, { status: 201 });
   } catch (error) {

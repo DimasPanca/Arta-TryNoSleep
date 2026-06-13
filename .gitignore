@@ -1,7 +1,12 @@
 node_modules/
 .next/
+
+# Hyperledger Fabric - generated network artifacts
+hyperledger/network/crypto-config/
+hyperledger/network/channel-artifacts/
 out/
 build/
+dist/
 
 .env
 .env.local
@@ -38,3 +43,10 @@ eslintrc.json
 .windsurf/
 skills/
 SKILL.md
+
+# Dataset and docs
+docs/
+raw/
+
+# Chaincode packages (generated)
+hyperledger/chaincode/*/*.tar.gz

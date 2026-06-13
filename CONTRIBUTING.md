@@ -7,12 +7,13 @@ termasuk workflow, standar kode, dan checklist sebelum commit.
 
 ## Sebelum Mulai Coding
 
-Baca dua dokumen ini dulu — mereka adalah sumber kebenaran project:
+Baca dokumen-dokumen ini dulu — mereka adalah sumber kebenaran project:
 
 - `ARCHITECTURE.md` — struktur folder, database schema, type definitions, API conventions
+- `HYPERLEDGER-GUIDE.md` — kontrak teknis dengan backend Hyperledger Fabric (chaincode, endpoint, tipe)
 - `DESIGN-SYSTEM.md` — token warna, tipografi, component patterns, copy rules
 
-Jangan membuat keputusan arsitektur atau visual yang bertentangan dengan kedua dokumen tersebut.
+Jangan membuat keputusan arsitektur atau visual yang bertentangan dengan ketiga dokumen tersebut.
 
 ---
 

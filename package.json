@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:fabric": "npm --prefix hyperledger/api run dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -1,4 +1,4 @@
-const BASE_URL = process.env.HYPERLEDGER_API_URL;
+const BASE_URL = (process.env.HYPERLEDGER_API_URL || '').replace(/\/+$/, '');
 const REQUEST_TIMEOUT_MS = 12_000;
 
 class BlockchainClientError extends Error {
@@ -77,13 +77,27 @@ function parseErrorDetail(raw: string): string {
   return raw.slice(0, 240);
 }
 
-export async function fabricPost<TBody, TResponse>(
+export interface FabricPayload {
+  channelid: string;
+  chaincodeid: string;
+  function: string;
+  args: string[];
+  /** Optional: override MSP identity (default: padiwangi) */
+  tenantId?: string;
+}
+
+export async function fabricPost<T extends FabricPayload, TResponse>(
   path: string,
-  body: TBody,
+  body: T,
 ): Promise<TResponse> {
-  return request<TResponse>(path, {
+  // Remove tenantId from body before sending, use it to determine endpoint
+  const { tenantId, ...rest } = body;
+  const endpoint = tenantId
+    ? `/api/v1/${tenantId}${path}`
+    : path;
+  return request<TResponse>(endpoint, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(rest),
   });
 }
 
