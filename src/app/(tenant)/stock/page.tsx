@@ -4,7 +4,8 @@ import type React from 'react';
 import { StockLedgerDashboard } from '@/components/stock/StockLedgerDashboard';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 import { getBatchesByTenant } from '@/lib/blockchain/query';
-import { buildStockLedgerRows, type StockLedgerRow } from '@/lib/stock/ledger';
+import { buildStockLedgerRows, buildStockLedgerRowsFromDb, type DbStockBatch, type StockLedgerRow } from '@/lib/stock/ledger';
+import { createServerClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Stok Ledger - Arta',
@@ -33,11 +34,33 @@ export default async function StockPage({
   let rows: StockLedgerRow[] = [];
   let error: string | null = null;
 
+  // Coba baca dari Fabric terlebih dahulu
   try {
     const histories = await getBatchesByTenant(tenantId);
     rows = buildStockLedgerRows(histories);
-  } catch (caught) {
-    error = caught instanceof Error ? caught.message : 'Hyperledger Fabric tidak terjangkau.';
+  } catch {
+    // Fabric offline/tidak tersedia — fallback ke Supabase
+  }
+
+  // Kalau Fabric kosong/offline, baca dari Supabase stock_batches
+  if (rows.length === 0) {
+    try {
+      const supabase = await createServerClient();
+      const { data, error: dbErr } = await supabase
+        .from('stock_batches')
+        .select('id, tenant_id, commodity, quantity_kg, grade, quality_score, status, received_at, updated_at, created_by')
+        .eq('tenant_id', tenantId)
+        .order('updated_at', { ascending: false });
+
+      if (dbErr) {
+        error = `Database: ${dbErr.message}`;
+      } else if (data && data.length > 0) {
+        rows = buildStockLedgerRowsFromDb(data as DbStockBatch[]);
+        error = null;
+      }
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : 'Gagal memuat data stok.';
+    }
   }
 
   return (

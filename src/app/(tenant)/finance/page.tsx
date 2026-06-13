@@ -6,7 +6,6 @@ import { FinanceWorkspace } from '@/components/finance/FinanceWorkspace';
 import { hasPermission } from '@/constants/roles';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 import { getApplicationsByApplicant, getLoanApplications } from '@/lib/finance/applications';
-import { SAMPLE_APPLICATIONS } from '@/lib/finance/samples';
 import { createServerClient } from '@/lib/supabase/server';
 import type { LoanApplication } from '@/types/finance';
 import type { TenantRole } from '@/types/tenant';
@@ -45,7 +44,7 @@ export default async function FinancePage(): Promise<React.JSX.Element> {
     }
     return (
       <FinanceWorkspace
-        applications={SAMPLE_APPLICATIONS}
+        applications={[]}
         tenantName={identity.tenantName}
         canDecide={false}
         canVerify={false}

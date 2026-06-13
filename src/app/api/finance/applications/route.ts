@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { submitLoanApplication } from '@/lib/blockchain/record';
+
 import { autoEvaluateLoan } from '@/lib/blockchain/query';
-import { createServerClient } from '@/lib/supabase/server';
-import type { FinancingType } from '@/types/finance';
+import { submitLoanApplication } from '@/lib/blockchain/record';
 import { createLoanApplication, getLoanApplications } from '@/lib/finance/applications';
 import { getCrossTenantCreditScore } from '@/lib/finance/credit';
 import { generateLoanRecommendation } from '@/lib/finance/recommendations';
+import { createServerClient } from '@/lib/supabase/server';
+import type { FinancingType } from '@/types/finance';
 
 export const runtime = 'nodejs';
 
@@ -154,10 +155,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       amount: parsed.amount,
       purpose: parsed.purpose ?? application.assetName ?? '',
       submittedAt: application.createdAt,
-    }).then((blockchainResult) => {
-      // Auto-evaluate via chaincode setelah submit berhasil
+    }).then(() => {
       return autoEvaluateLoan(application.id).catch((evalErr) => {
-        console.warn('[finance/applications] AutoEvaluate gagal:', evalErr);
+        console.error('[finance/applications] AutoEvaluate gagal:', evalErr);
         return null;
       });
     }).catch((err) => {

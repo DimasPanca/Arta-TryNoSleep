@@ -25,6 +25,14 @@ interface ScanStudioProps {
   ingestPath: string;
 }
 
+const COMMODITIES = [
+  'Tomat', 'Salak', 'Bawang Merah', 'Bawang Putih', 'Kangkung',
+  'Terong', 'Timun', 'Pare', 'Labu Siam', 'Kacang Panjang',
+  'Buncis', 'Ubi Jalar', 'Kentang', 'Kol', 'Brokoli',
+  'Jeruk', 'Mangga', 'Pisang', 'Pepaya', 'Semangka',
+  'Nanas', 'Jagung', 'Selada', 'Jamur Tiram',
+];
+
 const GRADE_COLOR: Record<QualityGrade, string> = {
   A: 'var(--color-grade-a)',
   B: 'var(--color-grade-b)',
@@ -55,6 +63,7 @@ export function ScanStudio({ canSave, preview, iotConfigured, ingestPath }: Scan
   const [result, setResult] = useState<ScanResult | null>(null);
   const [meta, setMeta] = useState<{ provider: Provider; latencyMs: number; imageHash: string } | null>(null);
   const [error, setError] = useState('');
+  const [commodity, setCommodity] = useState('Tomat');
 
   async function handleCapture(dataUrl: string): Promise<void> {
     setImage(dataUrl);
@@ -64,7 +73,7 @@ export function ScanStudio({ canSave, preview, iotConfigured, ingestPath }: Scan
       const res = await fetch('/api/scan/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl, commodity: 'tomat' }),
+        body: JSON.stringify({ image: dataUrl, commodity }),
       });
       const json = (await res.json()) as AnalyzeResponse;
       if (!res.ok || !json.ok) throw new Error(json.error || 'Analisis gagal.');
@@ -83,6 +92,7 @@ export function ScanStudio({ canSave, preview, iotConfigured, ingestPath }: Scan
     setResult(null);
     setMeta(null);
     setError('');
+    // Tidak reset commodity — user biasanya pindai komoditas yang sama
   }
 
   return (
@@ -103,12 +113,28 @@ export function ScanStudio({ canSave, preview, iotConfigured, ingestPath }: Scan
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Kolom kiri: kamera / preview */}
         <div className="space-y-4 lg:col-span-6">
+          {phase === 'capture' && (
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-card)] px-4 py-3">
+              <label className="flex items-center gap-3">
+                <span className="text-sm font-medium text-[var(--color-text-secondary)] whitespace-nowrap">Jenis sayur / buah</span>
+                <select
+                  value={commodity}
+                  onChange={(e) => setCommodity(e.target.value)}
+                  className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand-400)] cursor-pointer"
+                >
+                  {COMMODITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
           {phase === 'capture' && <CameraCapture onCapture={handleCapture} />}
 
           {(phase === 'analyzing' || phase === 'result' || phase === 'error') && image && (
             <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image} alt="Foto tomat" className="aspect-[4/3] w-full object-cover" />
+              <img src={image} alt={`Foto ${commodity}`} className="aspect-[4/3] w-full object-cover" />
               {phase === 'analyzing' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 backdrop-blur-[2px]">
                   <span className="h-9 w-9 animate-arta-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -152,6 +178,7 @@ export function ScanStudio({ canSave, preview, iotConfigured, ingestPath }: Scan
               canSave={canSave}
               preview={preview}
               onSaved={reset}
+              commodity={commodity}
             />
           )}
         </div>
@@ -169,12 +196,14 @@ function ResultView({
   canSave,
   preview,
   onSaved,
+  commodity,
 }: {
   result: ScanResult;
   meta: { provider: Provider; latencyMs: number; imageHash: string };
   canSave: boolean;
   preview: boolean;
   onSaved: () => void;
+  commodity: string;
 }): ReactNode {
   return (
     <div className="animate-arta-rise space-y-4">
@@ -242,7 +271,7 @@ function ResultView({
         </div>
       </div>
 
-      <SaveForm result={result} imageHash={meta.imageHash} canSave={canSave} preview={preview} onSaved={onSaved} />
+      <SaveForm result={result} imageHash={meta.imageHash} canSave={canSave} preview={preview} onSaved={onSaved} defaultCommodity={commodity} />
     </div>
   );
 }
@@ -254,14 +283,16 @@ function SaveForm({
   canSave,
   preview,
   onSaved,
+  defaultCommodity,
 }: {
   result: ScanResult;
   imageHash: string;
   canSave: boolean;
   preview: boolean;
   onSaved: () => void;
+  defaultCommodity: string;
 }): ReactNode {
-  const [commodity, setCommodity] = useState('Tomat');
+  const [commodity, setCommodity] = useState(defaultCommodity);
   const [quantity, setQuantity] = useState('');
   const [storage, setStorage] = useState<'ambient' | 'cold'>('ambient');
   const [createBatch, setCreateBatch] = useState(true);
@@ -327,12 +358,16 @@ function SaveForm({
       <div className="mt-3 space-y-3">
         <label className="block">
           <span className="text-xs font-medium text-[var(--color-text-secondary)]">Komoditas</span>
-          <input
+          <select
             value={commodity}
             onChange={(e) => setCommodity(e.target.value)}
             disabled={!canSave}
-            className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand-400)] disabled:opacity-60"
-          />
+            className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand-400)] disabled:opacity-60 cursor-pointer"
+          >
+            {COMMODITIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </label>
 
         <label className="flex items-center gap-2.5">

@@ -7,7 +7,9 @@
   "ignorePatterns": [
     "src/components/SideRays.jsx",
     "src/components/ScrollVelocity.jsx",
-    "src/components/CardNav.jsx"
+    "src/components/CardNav.jsx",
+    "src/components/Carousel.jsx",
+    "src/components/ProfileCard.jsx"
   ],
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",

@@ -12,11 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 
-/* ──────────────────────────────────────────────────────────────
-   Komponen ReactBits (WebGL / GSAP / motion) hanya dieksekusi di
-   sisi klien. Dimuat lewat next/dynamic ssr:false agar tidak
-   memicu peringatan SSR & WebGL berjalan mulus.
-   ────────────────────────────────────────────────────────────── */
+
 interface SideRaysProps {
   rayColor1?: string;
   rayColor2?: string;
@@ -76,10 +72,8 @@ const CardNav = dynamic(() => import('@/components/CardNav'), {
   ssr: false,
 }) as ComponentType<CardNavProps>;
 
-/* ── Palet aksen selaras SideRays ─────────────────────────────── */
 const GOLD = '#EAB308';
-
-/* ── Navigasi (CardNav) ───────────────────────────────────────── */
+  
 const NAV_ITEMS: CardNavItem[] = [
   {
     label: 'Platform',
