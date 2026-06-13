@@ -7,6 +7,13 @@ Arta dibangun khusus untuk menyelesaikan tantangan transparansi dan manajemen da
 
 ---
 
+## Live Demo
+
+Aplikasi dapat diakses dan diuji langsung tanpa instalasi melalui tautan berikut:
+**[https://arta-try-no-sleep.vercel.app/](https://arta-try-no-sleep.vercel.app/)**
+
+---
+
 ## Akun Demo Juri
 
 Untuk memudahkan pengujian tanpa perlu registrasi, silakan gunakan kredensial berikut. Akun ini terhubung ke *database staging* dan aman untuk diutak-atik.
