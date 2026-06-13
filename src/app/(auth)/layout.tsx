@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type React from 'react';
 
 import { LottieSlot } from '@/components/auth/LottieSlot';
@@ -60,14 +61,14 @@ export default function AuthLayout({
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2.5">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--color-brand-400)] text-white shadow-lg">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-              <path
-                d="M12 3c4 2 7 5 7 9a7 7 0 1 1-14 0c0-1.6.5-3 1.3-4.2C7.6 9.7 9.5 11 12 11c-1.3-2-1-5 0-8Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
+          <Image
+            src="/Arta-Logo.png"
+            alt="Arta"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-lg object-contain"
+            priority
+          />
           <span className="font-[var(--font-display)] text-2xl tracking-tight">Arta</span>
         </div>
 
@@ -100,14 +101,14 @@ export default function AuthLayout({
       <main className="flex flex-1 flex-col">
         {/* Header brand (mobile) */}
         <div className="flex items-center justify-center gap-2.5 px-6 pt-8 lg:hidden">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-brand-600)] text-white">
-            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
-              <path
-                d="M12 3c4 2 7 5 7 9a7 7 0 1 1-14 0c0-1.6.5-3 1.3-4.2C7.6 9.7 9.5 11 12 11c-1.3-2-1-5 0-8Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
+          <Image
+            src="/Arta-Logo.png"
+            alt="Arta"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg object-contain"
+            priority
+          />
           <span className="font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">
             Arta
           </span>

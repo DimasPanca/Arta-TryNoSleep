@@ -4,7 +4,7 @@ import type React from 'react';
 import { LoginForm } from './LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Masuk — Arta',
+  title: 'Masuk · Arta',
   description: 'Masuk ke akun koperasi Anda dengan nomor WhatsApp.',
 };
 

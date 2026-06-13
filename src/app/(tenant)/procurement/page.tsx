@@ -9,7 +9,7 @@ import { getProcurementFabricStatus } from '@/lib/procurement/fabric';
 import { SAMPLE_PROCUREMENTS } from '@/lib/procurement/samples';
 
 export const metadata: Metadata = {
-  title: 'Pengadaan Bersama — Arta',
+  title: 'Pengadaan Bersama · Arta',
 };
 
 export const dynamic = 'force-dynamic';

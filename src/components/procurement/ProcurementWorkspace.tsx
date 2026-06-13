@@ -532,7 +532,7 @@ function DetailPanel({
         </div>
         {m.oversubscribed && (
           <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-[var(--color-amber-100)] px-3 py-2 text-[11px] text-[var(--color-amber-400)]">
-            Permintaan melebihi kapasitas — alokasi dipotong proporsional (pro-rata).
+            Permintaan melebihi kapasitas. Alokasi dipotong secara proporsional (pro-rata).
           </p>
         )}
         <div className="mt-3 space-y-2">
@@ -759,7 +759,7 @@ function AllocationRow({
           {participant.external && (
             <span
               className="rounded-full bg-[#ede9fe] px-1.5 py-0.5 text-[9px] font-semibold text-[#7c3aed]"
-              title="Belum di sistem — konfirmasi & bayar manual"
+              title="Belum terdaftar di sistem. Konfirmasi dan bayar secara manual."
             >
               manual
             </span>
@@ -833,7 +833,7 @@ function FabricRecord({
           </p>
           <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">
             {recorded
-              ? 'Alokasi & harga bersifat immutable — tiap koperasi dapat memverifikasi tanpa saling percaya buta.'
+              ? 'Alokasi dan harga telah dikunci permanen di blockchain. Setiap koperasi dapat memverifikasi secara independen.'
               : 'Kunci kesepakatan dengan mencatat alokasi & harga ke ledger bersama.'}
           </p>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">

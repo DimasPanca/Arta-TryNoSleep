@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -140,14 +141,14 @@ export function CommandBar({ role, name, tenantName, preview }: CommandBarProps)
         <div className="flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-brand-600)] text-white">
-                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden>
-                  <path
-                    d="M12 3c4 2 7 5 7 9a7 7 0 1 1-14 0c0-1.6.5-3 1.3-4.2C7.6 9.7 9.5 11 12 11c-1.3-2-1-5 0-8Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </span>
+              <Image
+                src="/Arta-Logo.png"
+                alt="Arta"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-lg object-contain"
+                priority
+              />
             </Link>
             <div className="hidden sm:block">
               <div className="text-sm font-semibold text-[var(--color-text-primary)]">{tenantName}</div>

@@ -36,10 +36,6 @@ export function relativeTime(iso?: string): string {
   return `${Math.floor(days / 365)} tahun lalu`;
 }
 
-export function maskPhone(phone: string): string {
-  return phone;
-}
-
 /* ── Avatar ───────────────────────────────────────────────────────── */
 
 export function MemberAvatar({

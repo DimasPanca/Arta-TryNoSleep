@@ -6,7 +6,7 @@ import { getInviteByToken } from '@/lib/supabase/admin';
 import { RegisterForm, type InviteContext } from './RegisterForm';
 
 export const metadata: Metadata = {
-  title: 'Daftar — Arta',
+  title: 'Daftar · Arta',
   description: 'Buat akun koperasi Anda di Arta.',
 };
 

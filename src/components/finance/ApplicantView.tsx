@@ -148,7 +148,7 @@ function ApplyForm({
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-5">
       {disabled && (
         <p className="mb-3 rounded-lg bg-[var(--color-amber-100)] px-3 py-2 text-xs font-medium text-[var(--color-amber-400)]">
-          Mode pratinjau — masuk sebagai anggota untuk mengajukan pembiayaan.
+          Anda sedang dalam mode pratinjau. Masuk sebagai anggota untuk mengajukan pembiayaan.
         </p>
       )}
 

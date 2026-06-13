@@ -6,7 +6,7 @@ import { hasPermission } from '@/constants/roles';
 import { getDashboardIdentity } from '@/lib/auth/identity';
 
 export const metadata: Metadata = {
-  title: 'Scan Kualitas — Arta',
+  title: 'Scan Kualitas · Arta',
 };
 
 export default async function ScanPage(): Promise<React.JSX.Element> {

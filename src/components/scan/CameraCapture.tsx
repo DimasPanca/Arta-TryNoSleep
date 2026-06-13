@@ -141,7 +141,7 @@ export function CameraCapture({ onCapture }: { onCapture: (dataUrl: string) => v
                 </span>
                 <p className="max-w-xs text-sm text-white/75">
                   {state === 'denied'
-                    ? 'Izin kamera ditolak. Aktifkan akses kamera di pengaturan browser, lalu coba lagi — atau unggah foto.'
+                    ? 'Izin kamera ditolak. Aktifkan akses kamera di pengaturan browser lalu coba lagi, atau unggah foto secara manual.'
                     : state === 'unsupported'
                       ? 'Perangkat/browser ini tidak mendukung kamera. Silakan unggah foto.'
                       : state === 'error'

@@ -43,7 +43,7 @@ export const COOPERATIVES: Cooperative[] = [
     accent: '#3a7a3a',
     isUs: true,
     onSystem: true,
-    note: 'Koperasi kita — pusat jejaring pengadaan.',
+    note: 'Koperasi kita, pusat jejaring pengadaan bersama.',
   },
   {
     id: 'PadiwangiMSP',
@@ -65,7 +65,7 @@ export const COOPERATIVES: Cooperative[] = [
     accent: '#d97706',
     isUs: false,
     onSystem: true,
-    note: 'Punya relasi supplier pupuk — sering memimpin pengadaan.',
+    note: 'Punya relasi kuat dengan supplier pupuk, sering memimpin pengadaan bersama.',
   },
   {
     id: 'TirtaBersamaMSP',
@@ -87,7 +87,7 @@ export const COOPERATIVES: Cooperative[] = [
     accent: '#7c3aed',
     isUs: false,
     onSystem: false,
-    note: 'Lokasi paling jauh, sinyal lemah — konfirmasi & bayar manual.',
+    note: 'Lokasi paling terpencil dengan sinyal lemah. Konfirmasi dan pembayaran dilakukan manual.',
   },
 ];
 

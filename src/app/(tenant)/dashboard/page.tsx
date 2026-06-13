@@ -14,7 +14,7 @@ import {
 import { getDashboardIdentity } from '@/lib/auth/identity';
 
 export const metadata: Metadata = {
-  title: 'Ringkasan — Arta',
+  title: 'Ringkasan · Arta',
 };
 
 // Ikon stat (di-inline agar tetap konsisten 24x24)

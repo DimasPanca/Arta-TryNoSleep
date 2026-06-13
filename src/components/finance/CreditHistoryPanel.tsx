@@ -94,7 +94,7 @@ export function CreditHistoryPanel({
       <div className="mt-4 space-y-2">
         {history.length === 0 ? (
           <p className="rounded-xl bg-[var(--color-surface)] p-3 text-center text-xs text-[var(--color-text-muted)]">
-            Belum ada riwayat di koperasi lain — pemohon baru.
+            Pemohon baru. Belum ada riwayat kredit di koperasi lain.
           </p>
         ) : (
           history.map((h) => <TenantRow key={h.tenantId} entry={h} />)

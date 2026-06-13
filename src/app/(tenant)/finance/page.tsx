@@ -12,7 +12,7 @@ import type { LoanApplication } from '@/types/finance';
 import type { TenantRole } from '@/types/tenant';
 
 export const metadata: Metadata = {
-  title: 'Keuangan — Arta',
+  title: 'Keuangan · Arta',
 };
 
 export const dynamic = 'force-dynamic';

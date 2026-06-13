@@ -344,7 +344,7 @@ export function RegisterForm({ invite, inviteError }: RegisterFormProps): ReactN
           Lengkapi data Anda
         </h1>
         <p className="mt-1.5 text-[15px] text-[var(--color-text-secondary)]">
-          Sedikit lagi—isi data berikut untuk menyelesaikan pendaftaran.
+          Hampir selesai. Lengkapi data berikut untuk menyelesaikan pendaftaran.
         </p>
       </header>
 

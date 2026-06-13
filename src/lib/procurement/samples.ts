@@ -41,7 +41,7 @@ export const SAMPLE_PROCUREMENTS: JointProcurementView[] = [
     initiatorId: 'SumberMakmurMSP',
     initiatorName: 'Koperasi Sumber Makmur',
     status: 'confirmed',
-    supplierName: 'PT Pupuk Kujang — distributor wilayah',
+    supplierName: 'PT Pupuk Kujang (Distributor Wilayah)',
     pricingTiers: [
       { minQty: 0, unitPrice: 130_000, label: 'Eceran (beli sendiri)' },
       { minQty: 50, unitPrice: 118_000, label: 'Volume 50+ sak' },

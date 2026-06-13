@@ -4,6 +4,11 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "plugins": ["@typescript-eslint", "import"],
+  "ignorePatterns": [
+    "src/components/SideRays.jsx",
+    "src/components/ScrollVelocity.jsx",
+    "src/components/CardNav.jsx"
+  ],
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/explicit-function-return-type": [

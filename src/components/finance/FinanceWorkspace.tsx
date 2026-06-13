@@ -60,7 +60,7 @@ export function FinanceWorkspace({ applications, tenantName, canDecide, canVerif
 
       {preview && (
         <p className="rounded-xl bg-[var(--color-amber-100)] px-3 py-2 text-xs font-medium text-[var(--color-amber-400)]">
-          Mode pratinjau — data contoh. Masuk sebagai pengurus untuk mengambil keputusan nyata.
+          Anda sedang melihat data contoh. Masuk sebagai pengurus untuk mengambil keputusan nyata.
         </p>
       )}
 
