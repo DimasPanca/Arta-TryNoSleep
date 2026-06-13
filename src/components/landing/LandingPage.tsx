@@ -69,6 +69,10 @@ interface CardNavProps {
 const SideRays = dynamic(() => import('@/components/SideRays'), {
   ssr: false,
 }) as ComponentType<SideRaysProps>;
+const CircularGalleryWrapper = dynamic(
+  () => import('@/components/landing/CircularGalleryWrapper'),
+  { ssr: false },
+);
 const ScrollVelocity = dynamic(() => import('@/components/ScrollVelocity'), {
   ssr: false,
 }) as ComponentType<ScrollVelocityProps>;
@@ -408,22 +412,10 @@ export function LandingPage(): React.JSX.Element {
         />
         <div aria-hidden className="arta-grid-overlay absolute inset-0 z-0 opacity-40" />
 
-        {/* SideRays  emas + langit, dari kanan atas */}
+        {/* CircularGallery  WebGL latar, auto-rotate */}
         {!reduce && (
-          <div className="arta-rays" aria-hidden>
-            <SideRays
-              rayColor1={GOLD}
-              rayColor2="#96c8ff"
-              origin="top-right"
-              speed={2.5}
-              intensity={2}
-              spread={2}
-              tilt={0}
-              saturation={1.5}
-              blend={0.75}
-              falloff={1.6}
-              opacity={1}
-            />
+          <div className="absolute inset-0 z-[1]" aria-hidden>
+            <CircularGalleryWrapper />
           </div>
         )}
 
