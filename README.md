@@ -54,7 +54,7 @@ Arta memiliki pilar fungsional utama yang bisa Anda uji langsung. Berikut adalah
 
 ---
 
-## Tech Stack & Arsitektur
+## 🛠 Tech Stack & Arsitektur
 
 Arta mengadopsi arsitektur modern untuk memastikan performa yang cepat, aman, dan data yang terdesentralisasi:
 

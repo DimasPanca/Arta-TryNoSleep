@@ -39,41 +39,45 @@ export default async function StockPage({
     const histories = await getBatchesByTenant(tenantId);
     rows = buildStockLedgerRows(histories);
   } catch {
-    // Fabric offline/tidak tersedia — fallback ke Supabase
+    // Fabric offline/tidak tersedia — lanjut baca DB
   }
 
-  // Kalau Fabric kosong/offline, baca dari Supabase stock_batches
-  if (rows.length === 0) {
-    try {
-      const supabase = await createServerClient();
-      const { data, error: dbErr } = await supabase
-        .from('stock_batches')
-        .select('id, tenant_id, commodity, quantity_kg, grade, quality_score, status, storage_type, received_at, expires_at, updated_at, created_by')
-        .eq('tenant_id', tenantId)
-        .order('updated_at', { ascending: false });
+  // Selalu baca dari DB juga — tampilkan batch DB yang belum ada di Fabric
+  try {
+    const supabase = await createServerClient();
+    const { data, error: dbErr } = await supabase
+      .from('stock_batches')
+      .select('id, tenant_id, commodity, quantity_kg, grade, quality_score, status, storage_type, received_at, expires_at, updated_at, created_by')
+      .eq('tenant_id', tenantId)
+      .order('updated_at', { ascending: false });
 
-      if (dbErr) {
-        error = `Database: ${dbErr.message}`;
-      } else if (data && data.length > 0) {
-        // Ambil kondisi scan terbaru per batch untuk prediksi masa simpan.
-        const batchIds = (data as Array<{ id: string }>).map((b) => b.id);
-        const ripenessByBatch = new Map<string, { color_ripeness: string; surface_condition: string }>();
-        const { data: scans } = await supabase
-          .from('scan_records')
-          .select('batch_id, color_ripeness, surface_condition, scanned_at')
-          .in('batch_id', batchIds)
-          .order('scanned_at', { ascending: false });
+    if (dbErr) {
+      if (rows.length === 0) error = `Database: ${dbErr.message}`;
+    } else if (data && data.length > 0) {
+      // Ambil kondisi scan terbaru per batch untuk prediksi masa simpan.
+      const batchIds = (data as Array<{ id: string }>).map((b) => b.id);
+      const ripenessByBatch = new Map<string, { color_ripeness: string; surface_condition: string }>();
+      const { data: scans } = await supabase
+        .from('scan_records')
+        .select('batch_id, color_ripeness, surface_condition, scanned_at')
+        .in('batch_id', batchIds)
+        .order('scanned_at', { ascending: false });
 
-        for (const s of (scans ?? []) as Array<{ batch_id: string | null; color_ripeness: string; surface_condition: string }>) {
-          if (s.batch_id && !ripenessByBatch.has(s.batch_id)) {
-            ripenessByBatch.set(s.batch_id, {
-              color_ripeness: s.color_ripeness,
-              surface_condition: s.surface_condition,
-            });
-          }
+      for (const s of (scans ?? []) as Array<{ batch_id: string | null; color_ripeness: string; surface_condition: string }>) {
+        if (s.batch_id && !ripenessByBatch.has(s.batch_id)) {
+          ripenessByBatch.set(s.batch_id, {
+            color_ripeness: s.color_ripeness,
+            surface_condition: s.surface_condition,
+          });
         }
+      }
 
-        const enriched: DbStockBatch[] = (data as DbStockBatch[]).map((b) => {
+      // Hanya tambahkan batch DB yang belum ada di Fabric (hindari duplikat)
+      const fabricIds = new Set(rows.map((r) => r.batchId));
+      const dbOnly = (data as DbStockBatch[]).filter((b) => !fabricIds.has(b.id));
+
+      if (dbOnly.length > 0) {
+        const enriched: DbStockBatch[] = dbOnly.map((b) => {
           const scan = ripenessByBatch.get(b.id);
           return {
             ...b,
@@ -81,11 +85,12 @@ export default async function StockPage({
             surface_condition: scan?.surface_condition ?? null,
           };
         });
-
-        rows = buildStockLedgerRowsFromDb(enriched);
-        error = null;
+        rows = [...rows, ...buildStockLedgerRowsFromDb(enriched)];
       }
-    } catch (caught) {
+      error = null;
+    }
+  } catch (caught) {
+    if (rows.length === 0) {
       error = caught instanceof Error ? caught.message : 'Gagal memuat data stok.';
     }
   }
